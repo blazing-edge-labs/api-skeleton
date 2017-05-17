@@ -1,0 +1,20 @@
+[http]
+bad_request = 400
+unauthorized = 401
+not_found = 404
+internal = 500
+
+[db]
+connection = 1000
+read = 1000
+write = 1001
+expect_one = 1003
+expect_none = 1004
+expect_many = 1005
+
+[user]
+wrong_password = 2001
+invalid_password = 2002
+not_found = 2003
+duplicate = 2004
+update = 2005

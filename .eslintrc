@@ -1,0 +1,10 @@
+{
+  "extends": [
+    "standard",
+    "plugin:promise/recommended"
+  ],
+  "rules": {
+    "comma-dangle": ["error", "always-multiline"],
+    "no-else-return": "error"
+  }
+}
