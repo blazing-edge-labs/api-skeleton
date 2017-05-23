@@ -16,7 +16,6 @@
     "babel-register": "^6.24.0",
     "bcrypt": "^1.0.2",
     "bluebird": "^3.5.0",
-    "db-migrate": "^0.10.0-beta.20",
     "dotenv-safe": "^4.0.3",
     "es6-error": "^4.0.2",
     "joi": "^10.4.1",
