@@ -39,7 +39,8 @@
     "npm-run-all": "^4.0.2",
     "pg-promise": "^5.6.4",
     "rimraf": "^2.6.1",
-    "toml-require": "^1.1.0"
+    "toml-require": "^1.1.0",
+    "snyk": "^1.36.2"
   },
   "devDependencies": {
     "eslint": "^3.19.0",
@@ -64,6 +65,9 @@
     "migrate": "node -r babel-register -r ./env node_modules/migratio/cli",
     "dev": "run-p -s dev:server",
     "dev:server": "nodemon -q -I -e js,json -i package.json -- -r babel-register index.js",
-    "test": "tape -r babel-register -r ./env **/*.test.js | tap-spec"
-  }
+    "test": "tape -r babel-register -r ./env **/*.test.js | tap-spec",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
+  },
+  "snyk": true
 }
