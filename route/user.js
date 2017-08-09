@@ -91,7 +91,7 @@ router.put('/user/:id/role', auth, roleUser.gte(consts.roleUser.admin), validate
   id: joi.number().integer().positive().required(),
 }), validate('body', {
   role: joi.any().valid(_.values(consts.roleUser)).required(),
-}), roleUser.p.gte('v.body.role'), async function (ctx) {
+}), roleUser.gte('v.body.role'), async function (ctx) {
   const {id} = ctx.v.param
   const {role} = ctx.v.body
   await userRepo.setRoleById(id, role)
