@@ -7,7 +7,6 @@ const auth = require('middleware/auth')
 const consts = require('const')
 const passwordTokenRepo = require('repo/passwordToken')
 const responder = require('middleware/responder')
-const roleCenter = require('middleware/roleCenter')
 const roleUser = require('middleware/roleUser')
 const userRepo = require('repo/user')
 const validate = require('middleware/validate')
@@ -97,25 +96,6 @@ router.put('/user/:id/role', auth, roleUser.gte(consts.roleUser.admin), validate
   const {role} = ctx.v.body
   await userRepo.setRoleById(id, role)
   ctx.state.r = {}
-})
-
-router.put('/user/:id/rolecenter', auth, validate('param', {
-  id: joi.number().integer().positive().required(),
-}), validate('body', {
-  centerId: joi.number().integer().positive().required(),
-  role: joi.any().valid(_.values(consts.roleCenter)).required(),
-}), roleCenter.gte(consts.roleCenter.instructor, 'v.body.centerId'), roleCenter.p.gte('v.body.role', 'v.body.centerId'), async function (ctx) {
-  const {id} = ctx.v.param
-  const {centerId, role} = ctx.v.body
-  await userRepo.setCenterRoleByIdCenterId(id, centerId, role)
-  ctx.state.r = {}
-})
-
-router.get('/user/center/:centerId/possibleinstructors', validate('param', {
-  centerId: joi.number().integer().positive().required(),
-}), async function (ctx) {
-  const {centerId} = ctx.v.param
-  ctx.state.r = await userRepo.getPossibleInstructorsByCenterId(centerId)
 })
 
 router.post('/passwordtoken', validate('body', {

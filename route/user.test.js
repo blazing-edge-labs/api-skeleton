@@ -88,7 +88,6 @@ test.api('self role get', async function (t, request) {
   t.notok(r.body.error, 'no error')
   t.deepEqual(r.body.data, {
     user: consts.roleUser.none,
-    center: [],
     admin: false,
   })
 })

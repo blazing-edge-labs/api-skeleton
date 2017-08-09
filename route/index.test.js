@@ -1,6 +1,7 @@
 const test = require('test')
+const fixture = require('fixture')
 
-const user = test.fixture.user.random
+const user = fixture.user.random
 
 test.api('register', async function (t, request) {
   const r = await request.post('/register').send({
