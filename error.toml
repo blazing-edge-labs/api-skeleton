@@ -8,13 +8,12 @@ internal = 500
 connection = 1000
 read = 1000
 write = 1001
-expect_one = 1003
-expect_none = 1004
-expect_many = 1005
+delete = 1002
 
 [user]
-wrong_password = 2001
-invalid_password = 2002
+password_wrong = 2001
+password_invalid = 2002
 not_found = 2003
 duplicate = 2004
 update = 2005
+password_token_invalid = 2006

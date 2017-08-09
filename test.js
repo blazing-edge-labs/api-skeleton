@@ -7,6 +7,7 @@ const {pgp} = require('db')
 const request = supertest(require('app').callback())
 
 const cache = new Map()
+const store = new Map()
 
 tape.onFinish(async function () {
   await pgp.end()
@@ -17,18 +18,34 @@ process.on('unhandledRejection', function (reason) {
   process.exit(1)
 })
 
-async function test () {
+function test () {
   const cb = _.last(arguments)
   tape(..._.initial(arguments), async function (t) {
-    await cb(t)
+    await cb(t, store)
     t.end()
   })
 }
 
-async function api () {
+function testOnly () {
+  const cb = _.last(arguments)
+  tape.only(..._.initial(arguments), async function (t) {
+    await cb(t, store)
+    t.end()
+  })
+}
+
+function api () {
   const cb = _.last(arguments)
   tape(..._.initial(arguments), async function (t) {
-    await cb(t, request)
+    await cb(t, request, store)
+    t.end()
+  })
+}
+
+function apiOnly () {
+  const cb = _.last(arguments)
+  tape.only(..._.initial(arguments), async function (t) {
+    await cb(t, request, store)
     t.end()
   })
 }
@@ -51,6 +68,7 @@ test.api = api
 test.api.skip = tape.skip
 test.skip = tape.skip
 test.skip.api = tape.skip
-test.fixture = require('fixture')
+test.only = testOnly
+test.only.api = apiOnly
 
 module.exports = test

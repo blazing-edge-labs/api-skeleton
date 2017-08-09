@@ -1,14 +1,10 @@
-const Promise = require('bluebird')
-const path = require('path')
-const pgp = require('pg-promise')({
-  promiseLib: Promise,
-})
+const pgp = require('pg-promise')()
 
 const queryFiles = new Map()
 
 function sql (filename) {
   if (!queryFiles.has(filename) || process.env.NODE_ENV === 'development') {
-    queryFiles.set(filename, new pgp.QueryFile(path.join('repo', 'query', `${filename}.sql`), {
+    queryFiles.set(filename, new pgp.QueryFile(`${filename}.sql`, {
       compress: process.env.NODE_ENV === 'production',
       debug: process.env.NODE_ENV === 'development',
     }))
@@ -22,4 +18,5 @@ module.exports = {
   helper: pgp.helpers,
   pgp,
   sql,
+  util: pgp.utils,
 }

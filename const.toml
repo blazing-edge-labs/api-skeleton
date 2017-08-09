@@ -1,0 +1,51 @@
+[gender]
+none = 0
+female = 1
+male = 2
+other = 100
+
+[race]
+none = 0
+america_alaska_native = 1
+asian = 2
+black = 3
+hispanic = 4
+pacific_island_native = 5
+white = 6
+
+[roleUser]
+none = 0
+admin = 10
+superadmin = 20
+
+[roleCenter]
+none = 0
+student = 10
+instructor = 20
+auditor = 30
+admin = 40
+
+[ageBucket]
+all = 0
+adult = 1
+youth = 2
+children = 3
+senior = 4
+
+[categoryCourse]
+education_stem = 0
+education_outofschool = 1
+education_parcc = 2
+professional_employment = 100
+professional_credentials = 101
+professional_careers = 102
+quality_social = 200
+quality_community = 201
+quality_business = 202
+
+[klass]
+  [klass.status]
+  empty = 0
+  upcoming = 1
+  progress = 2
+  past = 3
