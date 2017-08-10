@@ -5,7 +5,6 @@ CREATE TABLE "user" (
   id SERIAL,
   email VARCHAR(254) NOT NULL,
   password CHAR(60) NOT NULL,
-  confirmed BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   UNIQUE (email)

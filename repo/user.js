@@ -10,7 +10,6 @@ const {mapper} = require('repo/base')
 const map = mapper({
   id: 'id',
   createdAt: 'created_at',
-  confirmed: v => !!v.confirmed,
   email: 'email',
 })
 
