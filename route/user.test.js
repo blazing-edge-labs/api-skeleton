@@ -7,41 +7,16 @@ test.api('register', async function (t, request) {
   const r = await request.post('/register').send({
     email: 'new@mail.com',
     password: 'newnewnew',
-    name: 'user user',
-    phone: '1111111111',
-    zip: '99501',
-    birthdate: '1991-05-19',
-    gender: consts.gender.male,
-    race: [consts.race.white],
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
   t.ok(r.body.data, 'registered')
 })
 
-test.api('register phone taken', async function (t, request) {
-  const r = await request.post('/register').send({
-    email: 'newnew@mail.com',
-    password: 'newnewnew',
-    name: 'user user',
-    phone: '1111111111',
-    zip: '99501',
-    birthdate: '1991-05-19',
-    gender: consts.gender.male,
-  })
-  t.is(r.status, 400, 'bad request')
-  t.is(r.body.error, 'phone.duplicate')
-})
-
 test.api('register email taken', async function (t, request) {
   const r = await request.post('/register').send({
     email: 'new@mail.com',
     password: 'newnewnew',
-    name: 'user user',
-    phone: '1111111111',
-    zip: '99501',
-    birthdate: '1991-05-19',
-    gender: consts.gender.male,
   })
   t.is(r.status, 400, 'bad request')
   t.is(r.body.error, 'user.duplicate', 'error code')
@@ -71,15 +46,6 @@ test.api('self get', async function (t, request) {
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
   t.is(_.get(r.body, 'data.email'), 'user1@mail.com', 'email')
-})
-
-test.api('self put', async function (t, request) {
-  const r = await request.put('/self').set(await test.auth('new@mail.com', 'newnewnew')).send({
-    name: 'user updated',
-  })
-  t.is(r.status, 200, 'success')
-  t.notok(r.body.error, 'no error')
-  t.is(_.get(r.body, 'data.name'), 'user updated', 'name updated')
 })
 
 test.api('self role get', async function (t, request) {

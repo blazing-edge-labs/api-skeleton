@@ -17,3 +17,8 @@ not_found = 2003
 duplicate = 2004
 update = 2005
 password_token_invalid = 2006
+
+[role]
+duplicate = 4000
+not_found = 4001
+insufficient = 4002

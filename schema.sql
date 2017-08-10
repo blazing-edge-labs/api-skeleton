@@ -5,6 +5,7 @@ CREATE TABLE "user" (
   id SERIAL,
   email VARCHAR(254) NOT NULL,
   password CHAR(60) NOT NULL,
+  confirmed BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   UNIQUE (email)
@@ -23,18 +24,3 @@ CREATE TABLE user_role (
   role SMALLINT NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id)
 );
-
-CREATE TABLE user_info (
-  user_id INTEGER NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  phone VARCHAR(15) NOT NULL,
-  zip VARCHAR(5) NOT NULL,
-  photo_permission BOOLEAN NOT NULL,
-  birthdate DATE NOT NULL,
-  veteran BOOLEAN,
-  gender SMALLINT,
-  race SMALLINT[],
-  PRIMARY KEY (user_id),
-  UNIQUE (phone)
-);
-

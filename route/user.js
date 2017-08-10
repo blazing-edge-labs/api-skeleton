@@ -16,17 +16,9 @@ router.use(responder)
 router.post('/register', validate('body', {
   email: joi.string().email().required(),
   password: joi.string().min(8).required(),
-  name: joi.string().trim().required(),
-  zip: joi.string().trim().regex(/^[0-9]+$/).max(5).required(),
-  phone: joi.string().trim().regex(/^[0-9]+$/).min(10).max(15).required(),
-  photoPermission: joi.bool().optional().default(true),
-  birthdate: joi.date().max('now').required(),
-  veteran: joi.bool().optional().default(false),
-  gender: joi.any().valid(_.values(consts.gender)).optional(),
-  race: joi.array().items(joi.any().valid(_.values(consts.race)).optional()).unique().optional(),
 }), async function (ctx) {
-  const {email, password, name, zip, phone, photoPermission, birthdate, veteran, gender, race} = ctx.v.body
-  await userRepo.create(email, password, name, zip, phone, photoPermission, birthdate, veteran, gender, race)
+  const {email, password} = ctx.v.body
+  await userRepo.create(email, password)
   ctx.state.r = await userRepo.getByEmail(email)
 })
 
@@ -45,31 +37,12 @@ router.get('/self', auth, async function (ctx) {
   ctx.state.r = await userRepo.getById(id)
 })
 
-router.put('/self', auth, validate('body', {
-  name: joi.string().trim().optional(),
-  zip: joi.string().trim().regex(/^[0-9]+$/).max(5).optional(),
-  phone: joi.string().trim().regex(/^[0-9]+$/).min(10).max(15).optional(),
-  photoPermission: joi.bool().optional(),
-  birthdate: joi.date().max('now').optional(),
-  veteran: joi.bool().optional(),
-  gender: joi.any().valid(_.values(consts.gender)).optional(),
-  race: joi.array().items(joi.any().valid(_.values(consts.race)).optional()).unique().optional(),
-}), async function (ctx) {
-  const {name, zip, phone, photoPermission, birthdate, veteran, gender, race} = ctx.v.body
-  const {id} = ctx.state.user
-  await userRepo.updateById(id, name, zip, phone, photoPermission, birthdate, veteran, gender, race)
-  ctx.state.r = await userRepo.getById(id)
-})
-
 router.get('/self/role', auth, async function (ctx) {
   const {id} = ctx.state.user
-  const role = await Promise.props({
-    user: userRepo.getRoleById(id),
-    center: userRepo.getCenterRolesById(id),
-  })
+  const user = await userRepo.getRoleById(id)
   ctx.state.r = {
-    ...role,
-    admin: role.user >= consts.roleUser.admin || _.some(role.center, centerRole => centerRole.role >= consts.roleCenter.instructor),
+    user,
+    admin: user >= consts.roleUser.admin,
   }
 })
 
