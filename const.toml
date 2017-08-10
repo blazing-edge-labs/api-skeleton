@@ -1,9 +1,3 @@
-[gender]
-none = 0
-female = 1
-male = 2
-other = 100
-
 [roleUser]
 none = 0
 admin = 10
