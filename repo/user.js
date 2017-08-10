@@ -5,12 +5,11 @@ const bcrypt = require('bcrypt')
 const consts = require('const')
 const error = require('error')
 const {db} = require('db')
-const {mapper} = require('repo/base')
 
-const map = mapper({
-  id: 'id',
-  createdAt: 'created_at',
-  email: 'email',
+const map = user => ({
+  id: user.id,
+  createdAt: user.created_at,
+  email: user.email,
 })
 
 async function hashPassword (password) {
