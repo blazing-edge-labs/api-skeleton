@@ -1,6 +1,6 @@
-seedManifest.js
+.DS_Store
+.env
+.idea
 node_modules
 npm-debug.log
-.DS_Store
-coverage
-.env
+tags

@@ -1,16 +1,15 @@
+const NestedError = require('nested-error-stacks')
 const _ = require('lodash')
 const assert = require('assert')
-const ExtendableError = require('es6-error')
 const pgp = require('pg-promise')
 
 const errors = require('error.toml')
 
-class GenericError extends ExtendableError {
-  constructor (ec, details, status) {
-    super(ec)
+class GenericError extends NestedError {
+  constructor (ec, cause, status) {
+    super(ec, cause)
     this.error = ec
     this.code = code(ec)
-    this.details = details
     this.status = status
   }
 }
@@ -25,28 +24,23 @@ function code (ec) {
   return code
 }
 
-function wrapper (ErrorClass) {
-  return function (ec, details, status = 500) {
-    return function handler (err) {
-      if (process.env.LOG > 0 && ErrorClass === DatabaseError) {
-        console.error(err)
-      } else if (process.env.LOG > 0 && ErrorClass === HttpError) {
-        console.error(err)
-      } else if (ErrorClass === ValidationError) {
-        // do nothing
-      } else if (process.env.LOG > 1) {
-        console.error(err)
+function wrapper (ErrorClass, defaultStatus = 500) {
+  return function (ec, status = defaultStatus) {
+    return function handler (cause, nothrow = false) {
+      if (cause instanceof GenericError && !nothrow) {
+        throw cause
       }
-
-      throw new ErrorClass(ec, details || err.details || err.message, status)
+      const err = new ErrorClass(ec, cause, status)
+      if (nothrow) return err
+      throw err
     }
   }
 }
 
-const error = wrapper(GenericError)
-error.db = wrapper(DatabaseError)
-error.http = wrapper(HttpError)
-error.validation = wrapper(ValidationError)
+const error = wrapper(GenericError, 400)
+error.db = wrapper(DatabaseError, 500)
+error.http = wrapper(HttpError, 500)
+error.validation = wrapper(ValidationError, 400)
 
 error.errors = errors
 
