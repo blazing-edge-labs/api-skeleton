@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/EastCoastProduct/api-skeleton"
+    "url": "https://github.com/EastCoastProduct/api-skeleton-v2"
   },
   "dependencies": {
     "babel-cli": "^6.24.1",
@@ -18,6 +18,7 @@
     "bluebird": "^3.5.0",
     "crypto-random-string": "^1.0.0",
     "dotenv-safe": "^4.0.4",
+    "is-promise": "^2.1.0",
     "joi": "^10.6.0",
     "jsonwebtoken": "^7.4.1",
     "kcors": "^2.2.1",
@@ -67,9 +68,6 @@
     "test": "tape -r babel-register -r ./env **/*.test.js | tap-spec",
     "db:recreate": "run-s -s 'migrate recreate'",
     "db:seed": "run-s -s 'migrate seed'",
-    "ci": "run-s -s lint:check db:recreate db:seed test",
-    "snyk-protect": "snyk protect",
-    "prepare": "npm run snyk-protect"
-  },
-  "snyk": true
+    "ci": "run-s -s lint:check db:recreate db:seed test"
+  }
 }
