@@ -46,6 +46,20 @@ router.get('/self/role', auth, async function (ctx) {
   }
 })
 
+router.get('/users', validate('query', {
+  sort: joi.array().items(joi.string()).length(2),
+  page: joi.number(),
+  perPage: joi.number(),
+  filter: joi.object(),
+}), async function (ctx) {
+  const {query} = ctx.request
+  const count = await userRepo.getAllCount()
+  ctx.state.r = {
+    items: await userRepo.getAll(query),
+    count: count[0].total,
+  }
+})
+
 router.get('/user/:id', auth, roleUser.gte(consts.roleUser.admin), validate('param', {
   id: joi.number().integer().positive().required(),
 }), async function (ctx) {

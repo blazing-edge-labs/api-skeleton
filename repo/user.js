@@ -106,6 +106,25 @@ async function setRoleById (id, role) {
   .catch(error.db('db.write'))
 }
 
+async function getAll (query) {
+  const sort = JSON.parse(query.sort)
+  const page = JSON.parse(query.page)
+  const perPage = JSON.parse(query.perPage)
+  return db.any(`
+  SELECT * FROM "user"
+  ORDER BY $1^ $2^
+  LIMIT $3 OFFSET $4
+  `, [...sort, perPage, ((page - 1) * perPage)])
+  .catch(error.QueryResultError, error('user.not_found'))
+  .catch(error.db('db.read'))
+  .then(users => users.map(map))
+}
+
+async function getAllCount () {
+  return db.any('SELECT count(*) AS total FROM "user"')
+  .catch(error.db('db.read'))
+}
+
 module.exports = {
   create,
   getByEmail,
@@ -115,4 +134,6 @@ module.exports = {
   map,
   setRoleById,
   updatePassword,
+  getAll,
+  getAllCount,
 }
