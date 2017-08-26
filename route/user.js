@@ -52,13 +52,20 @@ router.get('/users', validate('query', {
   perPage: joi.number(),
   filter: joi.object(),
 }), async function (ctx) {
-  const {query} = ctx.request
+  const {query} = ctx.v
   const count = await userRepo.getAllCount()
   ctx.state.r = {
     items: await userRepo.getAll(query),
     count: count[0].total,
   }
 })
+
+// router.get('/users/:id', validate('param', {
+//   id: joi.number().integer().positive().required(),
+// }), async function (ctx) {
+//   const {id} = ctx.v.param
+//   ctx.state.r = await userRepo.getById(id)
+// })
 
 router.get('/user/:id', auth, roleUser.gte(consts.roleUser.admin), validate('param', {
   id: joi.number().integer().positive().required(),

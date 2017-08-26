@@ -107,9 +107,7 @@ async function setRoleById (id, role) {
 }
 
 async function getAll (query) {
-  const sort = JSON.parse(query.sort)
-  const page = JSON.parse(query.page)
-  const perPage = JSON.parse(query.perPage)
+  const {sort, page, perPage} = query
   return db.any(`
   SELECT * FROM "user"
   ORDER BY $1^ $2^
