@@ -3,14 +3,18 @@ const {db} = require('db')
 const userMap = require('repo/user').map
 
 /**
- * To export controllers for additional resources
- * simply add the resource with it's mapping here
+ * To export controllers (and add routes) for additional resources
+ * simply add the resource name along with it's mapping below
  */
 const resourceMaps = {
   'user': userMap,
+  // add here
 }
-
 const resourceList = Object.keys(resourceMaps)
+
+// [ ] Todo: implement Create
+// [ ] Todo: implement Update
+// [ ] Todo: implement Delete
 
 const getAll = (resource) => {
   const map = resourceMaps[resource]
@@ -47,8 +51,6 @@ const getById = (resource) => {
     .catch(error.db('db.read'))
   }
 }
-
-// Todo: implement Create, Update, Delete
 
 resourceList.forEach(resource => {
   module.exports[resource] = {
