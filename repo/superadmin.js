@@ -10,6 +10,8 @@ const resourceMaps = {
   'user': userMap,
 }
 
+const resourceList = Object.keys(resourceMaps)
+
 const getAll = (resource) => {
   const map = resourceMaps[resource]
   return async (query) => {
@@ -48,10 +50,12 @@ const getById = (resource) => {
 
 // Todo: implement Create, Update, Delete
 
-Object.keys(resourceMaps).forEach(resource => {
+resourceList.forEach(resource => {
   module.exports[resource] = {
     getAll: getAll(resource),
     getAllCount: getAllCount(resource),
     getById: getById(resource),
   }
 })
+
+module.exports.resourceList = resourceList
