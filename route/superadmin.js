@@ -34,6 +34,14 @@ resources.forEach(resource => {
     const {id} = ctx.v.param
     ctx.state.r = await adminRepo[resource].getById(id)
   })
+
+  router.del(`/${resource}/:id`, validate('param', {
+    id: joi.number().integer().positive().required(),
+  }), async function (ctx) {
+    const {id} = ctx.v.param
+    await adminRepo[resource].remove(id)
+    ctx.state.r = {}
+  })
 })
 
 module.exports = router

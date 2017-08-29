@@ -14,7 +14,11 @@ const resourceList = Object.keys(resourceMaps)
 
 // [ ] Todo: implement Create
 // [ ] Todo: implement Update
-// [ ] Todo: implement Delete
+// [x] Todo: implement Delete
+
+// const create = (resource) => {}
+
+// const update = (resource) => {}
 
 const getAll = (resource) => {
   const map = resourceMaps[resource]
@@ -52,11 +56,18 @@ const getById = (resource) => {
   }
 }
 
+const remove = (resource) => {
+  return async (id) => {
+    return db.none('DELETE FROM $1~ WHERE id = $2', [resource, id])
+  }
+}
+
 resourceList.forEach(resource => {
   module.exports[resource] = {
     getAll: getAll(resource),
     getAllCount: getAllCount(resource),
     getById: getById(resource),
+    remove: remove(resource),
   }
 })
 
