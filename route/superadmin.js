@@ -35,6 +35,11 @@ resources.forEach(resource => {
     ctx.state.r = await adminRepo[resource].getById(id)
   })
 
+  router.post(`/${resource}`, async (ctx) => {
+    await adminRepo[resource].create(ctx.request.body)
+    ctx.state.r = {}
+  })
+
   router.del(`/${resource}/:id`, validate('param', {
     id: joi.number().integer().positive().required(),
   }), async function (ctx) {

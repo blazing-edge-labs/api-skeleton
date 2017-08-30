@@ -1,27 +1,29 @@
 const error = require('error')
-const {db} = require('db')
-const userMap = require('repo/user').map
-
-/**
- * To export controllers (and add routes) for additional resources
- * simply add the resource name along with it's mapping below
- */
-const resourceMaps = {
-  'user': userMap,
-  // add here
-}
-const resourceList = Object.keys(resourceMaps)
+const {db, helper} = require('db')
+const userRepo = require('repo/user')
 
 // [ ] Todo: implement Create
 // [ ] Todo: implement Update
 // [x] Todo: implement Delete
 
-// const create = (resource) => {}
-
-// const update = (resource) => {}
+/**
+ * To export controllers (and add routes) for additional resources
+ * simply add the resource name along with it's mappings below.
+ *
+ * If you need to use a less generic controller
+ * you can manually override it at the bottom of this file
+ */
+const resourceMaps = {
+  'user': {
+    map: userRepo.map,
+    cs: userRepo.cs,
+  },
+  // add here
+}
+const resourceList = Object.keys(resourceMaps)
 
 const getAll = (resource) => {
-  const map = resourceMaps[resource]
+  const {map} = resourceMaps[resource]
   return async (query) => {
     const {sort, page, perPage} = query
     return db.any(`
@@ -43,7 +45,7 @@ const getAllCount = (resource) => {
 }
 
 const getById = (resource) => {
-  const map = resourceMaps[resource]
+  const {map} = resourceMaps[resource]
   return async (id) => {
     return db.one(`
     SELECT *
@@ -62,13 +64,31 @@ const remove = (resource) => {
   }
 }
 
+const create = (resource) => {
+  const {cs} = resourceMaps[resource]
+  return async (data) => {
+    return db.tx(async (t) => {
+      return t.none(helper.insert(data, cs))
+    })
+    .catch(error.db('db.write'))
+  }
+}
+
+// const update = (resource) => {}
+
+// Export list of resources used
+module.exports.resourceList = resourceList
+
+// Generate & export all controllers for each resource
 resourceList.forEach(resource => {
   module.exports[resource] = {
     getAll: getAll(resource),
     getAllCount: getAllCount(resource),
     getById: getById(resource),
     remove: remove(resource),
+    create: create(resource),
   }
 })
 
-module.exports.resourceList = resourceList
+// Override generic controllers
+module.exports.user.create = ({email, password}) => userRepo.create(email, password)
