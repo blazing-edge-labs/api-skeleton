@@ -15,7 +15,7 @@ const userRepo = require('repo/user')
 const resourceMaps = {
   'user': {
     map: userRepo.map,
-    cs: userRepo.cs,
+    columnSet: userRepo.columnSet,
   },
   // add here
 }
@@ -26,13 +26,13 @@ const getAll = (resource) => {
   return async (query) => {
     const {sort, page, perPage} = query
     return db.any(`
-  SELECT * FROM $1~
-  ORDER BY $2^ $3^
-  LIMIT $4 OFFSET $5
+      SELECT * FROM $1~
+      ORDER BY $2^ $3^
+      LIMIT $4 OFFSET $5
   `, [resource, ...sort, perPage, ((page - 1) * perPage)])
     .catch(error.QueryResultError, error(`${resource}.not_found`))
     .catch(error.db('db.read'))
-    .then(results => results.map(map))
+    .map(map)
   }
 }
 
@@ -47,9 +47,9 @@ const getById = (resource) => {
   const {map} = resourceMaps[resource]
   return async (id) => {
     return db.one(`
-    SELECT *
-    FROM $1~
-    WHERE id = $2
+      SELECT *
+      FROM $1~
+      WHERE id = $2
   `, [resource, id])
     .then(map)
     .catch(error.QueryResultError, error(`${resource}.not_found`))
@@ -64,9 +64,9 @@ const remove = (resource) => {
 }
 
 const create = (resource) => {
-  const {cs} = resourceMaps[resource]
+  const {columnSet} = resourceMaps[resource]
   return async (data) => {
-    return db.one(helper.insert(data, cs) + ' RETURNING id')
+    return db.one(helper.insert(data, columnSet) + ' RETURNING id')
     .catch(error.db('db.write'))
   }
 }

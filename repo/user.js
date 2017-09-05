@@ -13,7 +13,7 @@ const map = mapper({
   email: 'email',
 })
 
-const cs = new helper.ColumnSet([
+const columnSet = new helper.ColumnSet([
   'email',
 ], {table: 'user'})
 
@@ -118,7 +118,7 @@ module.exports = {
   getById,
   getRoleById,
   map,
-  cs,
+  columnSet,
   setRoleById,
   updatePassword,
 }
