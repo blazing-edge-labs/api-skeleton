@@ -9,8 +9,6 @@ const resources = adminRepo.resourceList
 router.use(responder)
 
 // Following routes are used for super-admin only (and currently don't utilize Auth middleware)
-// [x] Todo: decide whether to extract these to a separate routes file (i.e. super-admin only routes) or not
-// [x] Todo: see what could be abstracted to minimize repetition when introducing routes for other resources
 // [ ] Todo: Add Auth middleware to routes after adding auth to super-admin FE
 
 resources.forEach(resource => {

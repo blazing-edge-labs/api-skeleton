@@ -2,9 +2,8 @@ const error = require('error')
 const {db, helper} = require('db')
 const userRepo = require('repo/user')
 
-// [ ] Todo: implement Create
 // [ ] Todo: implement Update
-// [x] Todo: implement Delete
+// [ ] Todo: implement list filtering
 
 /**
  * To export controllers (and add routes) for additional resources
