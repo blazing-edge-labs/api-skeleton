@@ -33,6 +33,13 @@ resources.forEach(resource => {
     ctx.state.r = await adminRepo[resource].getById(id)
   })
 
+  router.put(`/${resource}/:id`, validate('param', {
+    id: joi.number().integer().positive().required(),
+  }), async function (ctx) {
+    const {id} = ctx.v.param
+    ctx.state.r = await adminRepo[resource].update(id, ctx.request.body)
+  })
+
   router.post(`/${resource}`, async (ctx) => {
     ctx.state.r = await adminRepo[resource].create(ctx.request.body)
   })

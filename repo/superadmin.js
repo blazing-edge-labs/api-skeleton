@@ -71,7 +71,12 @@ const create = (resource) => {
   }
 }
 
-// const update = (resource) => {}
+const update = (resource) => {
+  const {columnSet} = resourceMaps[resource]
+  return async (id, data) => {
+    return db.one(helper.update(data, columnSet) + ' WHERE id = $1 RETURNING id', id)
+  }
+}
 
 // Export list of resources used
 module.exports.resourceList = resourceList
@@ -84,6 +89,7 @@ resourceList.forEach(resource => {
     getById: getById(resource),
     remove: remove(resource),
     create: create(resource),
+    update: update(resource),
   }
 })
 
