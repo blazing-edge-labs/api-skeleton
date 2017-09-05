@@ -14,12 +14,7 @@ const map = mapper({
 })
 
 const cs = new helper.ColumnSet([
-  '?id',
   'email',
-  {
-    name: 'password',
-    init: col => col ? hashPassword(col) : '',
-  },
 ], {table: 'user'})
 
 async function hashPassword (password) {
@@ -34,10 +29,11 @@ async function checkPassword (password, hash) {
 
 async function create (email, password, firstName, lastName) {
   return db.tx(async function (t) {
-    return t.none(`
+    return t.one(`
       INSERT INTO
         "user" (email, password)
-        VALUES ($[email], $[password]);
+        VALUES ($[email], $[password])
+        RETURNING id;
       INSERT INTO
         user_role (user_id, role)
         VALUES (currval('user_id_seq'), $[role])

@@ -67,9 +67,7 @@ const remove = (resource) => {
 const create = (resource) => {
   const {cs} = resourceMaps[resource]
   return async (data) => {
-    return db.tx(async (t) => {
-      return t.none(helper.insert(data, cs))
-    })
+    return db.one(helper.insert(data, cs) + ' RETURNING id')
     .catch(error.db('db.write'))
   }
 }

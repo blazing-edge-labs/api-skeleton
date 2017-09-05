@@ -36,8 +36,7 @@ resources.forEach(resource => {
   })
 
   router.post(`/${resource}`, async (ctx) => {
-    await adminRepo[resource].create(ctx.request.body)
-    ctx.state.r = {}
+    ctx.state.r = await adminRepo[resource].create(ctx.request.body)
   })
 
   router.del(`/${resource}/:id`, validate('param', {
