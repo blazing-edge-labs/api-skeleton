@@ -5,7 +5,7 @@ CREATE TABLE "user" (
   id SERIAL,
   email VARCHAR(254) NOT NULL,
   password CHAR(60) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   UNIQUE (email)
 );
@@ -13,7 +13,7 @@ CREATE TABLE "user" (
 CREATE TABLE password_token (
   user_id INTEGER NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
   token CHAR(32) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id),
   UNIQUE (token)
 );
