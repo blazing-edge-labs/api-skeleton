@@ -36,6 +36,19 @@ const getAll = (resource) => {
   }
 }
 
+const getMany = (resource) => {
+  const {map} = resourceMaps[resource]
+  return async (ids) => {
+    return db.any(`
+      SELECT * FROM $1~ 
+      WHERE id IN ($2:csv)
+    `, [resource, ids])
+    .map(map)
+    .catch(error.QueryResultError, error(`${resource}.not_found`))
+    .catch(error.db('db.read'))
+  }
+}
+
 const getAllCount = (resource) => {
   return async () => {
     return db.any('SELECT count(*) AS total FROM $1~', resource)
@@ -85,6 +98,7 @@ module.exports.resourceList = resourceList
 resourceList.forEach(resource => {
   module.exports[resource] = {
     getAll: getAll(resource),
+    getMany: getMany(resource),
     getAllCount: getAllCount(resource),
     getById: getById(resource),
     remove: remove(resource),

@@ -12,6 +12,13 @@ router.use(responder)
 // [ ] Todo: Add Auth middleware to routes after adding auth to super-admin FE
 
 resources.forEach(resource => {
+  router.get(`/${resource}/many`, validate('query', {
+    ids: joi.array().items(joi.number().integer()),
+  }), async (ctx) => {
+    const {ids} = ctx.v.query
+    ctx.state.r = await adminRepo[resource].getMany(ids)
+  })
+
   router.get(`/${resource}`, validate('query', {
     sort: joi.array().items(joi.string()).length(2),
     page: joi.number(),
