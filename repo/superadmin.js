@@ -2,7 +2,6 @@ const error = require('error')
 const {db, helper} = require('db')
 const userRepo = require('repo/user')
 
-// [ ] Todo: implement Update
 // [ ] Todo: implement list filtering
 
 /**
