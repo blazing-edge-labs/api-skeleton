@@ -1,3 +1,6 @@
+[webPath]
+recoverPasswordPrefix = "/recoverPassword/"
+
 [roleUser]
 none = 0
 admin = 10
