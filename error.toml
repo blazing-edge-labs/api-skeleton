@@ -18,6 +18,14 @@ duplicate = 2004
 update = 2005
 password_token_invalid = 2006
 
+[passwordless]
+not_found = 3000
+duplicate = 3001
+token_mismatch = 3002
+wrong_link = 3003
+wrong_origin = 3004
+expired = 3005
+
 [role]
 duplicate = 4000
 not_found = 4001

@@ -23,3 +23,12 @@ CREATE TABLE user_role (
   role SMALLINT NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id)
 );
+
+CREATE TABLE passwordless (
+  token_remote UUID NOT NULL,
+  token_direct UUID NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES "user" (id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (token_remote),
+  UNIQUE (token_direct)
+);
