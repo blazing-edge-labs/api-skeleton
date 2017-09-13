@@ -10,6 +10,7 @@ const responder = require('middleware/responder')
 const roleUser = require('middleware/roleUser')
 const userRepo = require('repo/user')
 const validate = require('middleware/validate')
+const mailer = require('utils/mailer')
 
 router.use(responder)
 
@@ -35,6 +36,34 @@ router.post('/auth', validate('body', {
 router.get('/self', auth, async function (ctx) {
   const {id} = ctx.state.user
   ctx.state.r = await userRepo.getById(id)
+})
+
+router.put('/self', auth, validate('body', {
+  // add
+}), async function (ctx) {
+  // const {id} = ctx.state.user
+  throw new Error('not implemented')
+})
+
+router.put('/self/email', auth, validate('body', {
+  email: joi.string().email().required(),
+  password: joi.string().required(),
+}), async function (ctx) {
+  const {id} = ctx.state.user
+  const {email, password} = ctx.v.body
+  await userRepo.checkPassword(id, password)
+  ctx.state.r = await userRepo.updateEmail(id, email)
+})
+
+router.put('/self/password', auth, validate('body', {
+  oldPassword: joi.string().required(),
+  newPassword: joi.string().min(8).required(),
+}), async function (ctx) {
+  const {id} = ctx.state.user
+  const {oldPassword, newPassword} = ctx.v.body
+  await userRepo.checkPassword(id, oldPassword)
+  await userRepo.updatePassword(id, newPassword)
+  ctx.state.r = {}
 })
 
 router.get('/self/role', auth, async function (ctx) {
@@ -71,15 +100,17 @@ router.put('/user/:id/role', auth, roleUser.gte(consts.roleUser.admin), validate
   ctx.state.r = {}
 })
 
-router.post('/passwordtoken', validate('body', {
+router.post('/recoverPassword', validate('body', {
   email: joi.string().email().required(),
 }), async function (ctx) {
   // TODO throttle
   const {email} = ctx.v.body
-  ctx.state.r = await passwordTokenRepo.createByEmail(email)
+  const token = await passwordTokenRepo.createByEmail(email)
+  await mailer.forgotPassword(email, token)
+  ctx.state.r = {}
 })
 
-router.post('/passwordchange', validate('body', {
+router.post('/changePassword', validate('body', {
   password: joi.string().min(8).required(),
   token: joi.string().length(32).required(),
 }), async function (ctx) {

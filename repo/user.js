@@ -18,12 +18,23 @@ async function hashPassword (password) {
   .catch(error.db('user.password_invalid'))
 }
 
-async function checkPassword (password, hash) {
+async function checkPasswordWithHash (password, hash) {
   return bcrypt.compare(password, hash).then(assert)
   .catch(error.AssertionError, error('user.password_wrong'))
 }
 
-async function create (email, password, firstName, lastName) {
+async function checkPassword (id, password) {
+  const r = await db.one(`
+    SELECT password
+    FROM "user"
+    WHERE id = $1
+  `, [id])
+  .catch(error.QueryResultError, error('user.not_found'))
+  .catch(error.db('db.read'))
+  await checkPasswordWithHash(password, r.password)
+}
+
+async function create (email, password) {
   return db.tx(async function (t) {
     return t.none(`
       INSERT INTO
@@ -43,12 +54,24 @@ async function create (email, password, firstName, lastName) {
 }
 
 async function updatePassword (id, password) {
-  return db.none(`
+  await db.none(`
     UPDATE "user"
     SET password = $2
     WHERE id = $1
   `, [id, await hashPassword(password)])
   .catch(error.db('db.update'))
+}
+
+async function updateEmail (id, email) {
+  return db.one(`
+    UPDATE "user"
+    SET email = $2
+    WHERE id = $1
+    RETURNING *
+  `, [id, email])
+  .catch({constraint: 'user_email_key'}, error('user.duplicate'))
+  .catch(error.db('db.write'))
+  .then(map)
 }
 
 async function getById (id) {
@@ -60,6 +83,18 @@ async function getById (id) {
   .then(map)
   .catch(error.QueryResultError, error('user.not_found'))
   .catch(error.db('db.read'))
+}
+
+async function getByIdPassword (id, password) {
+  const user = await db.one(`
+    SELECT *
+    FROM "user"
+    WHERE id = $1
+  `, [id])
+  .catch(error.QueryResultError, error('user.not_found'))
+  .catch(error.db('db.read'))
+  await checkPasswordWithHash(password, user.password)
+  return map(user)
 }
 
 async function getByEmail (email) {
@@ -75,13 +110,13 @@ async function getByEmail (email) {
 
 async function getByEmailPassword (email, password) {
   const user = await db.one(`
-    SELECT id, password
+    SELECT *
     FROM "user"
     WHERE email = $1
   `, [email])
   .catch(error.QueryResultError, error('user.password_wrong'))
   .catch(error.db('db.read'))
-  await checkPassword(password, user.password)
+  await checkPasswordWithHash(password, user.password)
   return map(user)
 }
 
@@ -108,11 +143,14 @@ async function setRoleById (id, role) {
 
 module.exports = {
   create,
+  checkPassword,
+  updatePassword,
+  updateEmail,
   getByEmail,
   getByEmailPassword,
   getById,
+  getByIdPassword,
   getRoleById,
   map,
   setRoleById,
-  updatePassword,
 }
