@@ -11,9 +11,6 @@ const resources = adminRepo.resourceList
 
 router.use(responder)
 
-// Following routes are used for super-admin only (and currently don't utilize Auth middleware)
-// [ ] Todo: Add Auth middleware to routes after adding auth to super-admin FE
-
 resources.forEach(resource => {
   router.get(`/${resource}/many`, auth, roleUser.gte(consts.roleUser.superadmin), validate('query', {
     ids: joi.array().items(joi.number().integer()),
