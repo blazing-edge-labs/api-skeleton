@@ -1,6 +1,9 @@
 const joi = require('joi')
 const router = new (require('koa-router'))()
 
+const consts = require('const')
+const auth = require('middleware/auth')
+const roleUser = require('middleware/roleUser')
 const responder = require('middleware/responder')
 const validate = require('middleware/validate')
 const adminRepo = require('repo/superadmin')
@@ -12,14 +15,14 @@ router.use(responder)
 // [ ] Todo: Add Auth middleware to routes after adding auth to super-admin FE
 
 resources.forEach(resource => {
-  router.get(`/${resource}/many`, validate('query', {
+  router.get(`/${resource}/many`, auth, roleUser.gte(consts.roleUser.superadmin), validate('query', {
     ids: joi.array().items(joi.number().integer()),
   }), async (ctx) => {
     const {ids} = ctx.v.query
     ctx.state.r = await adminRepo[resource].getMany(ids)
   })
 
-  router.get(`/${resource}`, validate('query', {
+  router.get(`/${resource}`, auth, roleUser.gte(consts.roleUser.superadmin), validate('query', {
     sort: joi.array().items(joi.string()).length(2),
     page: joi.number(),
     perPage: joi.number(),
@@ -33,25 +36,25 @@ resources.forEach(resource => {
     }
   })
 
-  router.get(`/${resource}/:id`, validate('param', {
+  router.get(`/${resource}/:id`, auth, roleUser.gte(consts.roleUser.superadmin), validate('param', {
     id: joi.number().integer().positive().required(),
   }), async function (ctx) {
     const {id} = ctx.v.param
     ctx.state.r = await adminRepo[resource].getById(id)
   })
 
-  router.put(`/${resource}/:id`, validate('param', {
+  router.put(`/${resource}/:id`, auth, roleUser.gte(consts.roleUser.superadmin), validate('param', {
     id: joi.number().integer().positive().required(),
   }), async function (ctx) {
     const {id} = ctx.v.param
     ctx.state.r = await adminRepo[resource].update(id, ctx.request.body)
   })
 
-  router.post(`/${resource}`, async (ctx) => {
+  router.post(`/${resource}`, auth, roleUser.gte(consts.roleUser.superadmin), async (ctx) => {
     ctx.state.r = await adminRepo[resource].create(ctx.request.body)
   })
 
-  router.del(`/${resource}/:id`, validate('param', {
+  router.del(`/${resource}/:id`, auth, roleUser.gte(consts.roleUser.superadmin), validate('param', {
     id: joi.number().integer().positive().required(),
   }), async function (ctx) {
     const {id} = ctx.v.param
