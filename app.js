@@ -12,6 +12,7 @@ app.use(require('middleware/error'))
 
 app.use(mount('/', require('route/index').routes()))
 app.use(mount('/', require('route/user').routes()))
+app.use(mount('/admin', require('route/superadmin').routes())) // Super-admin API endpoints
 
 app.use(async function (ctx, next) {
   ctx.throw(404)
