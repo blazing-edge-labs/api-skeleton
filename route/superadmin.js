@@ -10,16 +10,18 @@ const adminRepo = require('repo/superadmin')
 const resources = adminRepo.resourceList
 
 router.use(responder)
+router.use(auth)
+router.use(roleUser.gte(consts.roleUser.superadmin))
 
 resources.forEach(resource => {
-  router.get(`/${resource}/many`, auth, roleUser.gte(consts.roleUser.superadmin), validate('query', {
+  router.get(`/${resource}/many`, validate('query', {
     ids: joi.array().items(joi.number().integer()),
   }), async (ctx) => {
     const {ids} = ctx.v.query
     ctx.state.r = await adminRepo[resource].getMany(ids)
   })
 
-  router.get(`/${resource}`, auth, roleUser.gte(consts.roleUser.superadmin), validate('query', {
+  router.get(`/${resource}`, validate('query', {
     sort: joi.array().items(joi.string()).length(2),
     page: joi.number(),
     perPage: joi.number(),
@@ -33,25 +35,25 @@ resources.forEach(resource => {
     }
   })
 
-  router.get(`/${resource}/:id`, auth, roleUser.gte(consts.roleUser.superadmin), validate('param', {
+  router.get(`/${resource}/:id`, validate('param', {
     id: joi.number().integer().positive().required(),
   }), async function (ctx) {
     const {id} = ctx.v.param
     ctx.state.r = await adminRepo[resource].getById(id)
   })
 
-  router.put(`/${resource}/:id`, auth, roleUser.gte(consts.roleUser.superadmin), validate('param', {
+  router.put(`/${resource}/:id`, validate('param', {
     id: joi.number().integer().positive().required(),
   }), async function (ctx) {
     const {id} = ctx.v.param
     ctx.state.r = await adminRepo[resource].update(id, ctx.request.body)
   })
 
-  router.post(`/${resource}`, auth, roleUser.gte(consts.roleUser.superadmin), async (ctx) => {
+  router.post(`/${resource}`, async (ctx) => {
     ctx.state.r = await adminRepo[resource].create(ctx.request.body)
   })
 
-  router.del(`/${resource}/:id`, auth, roleUser.gte(consts.roleUser.superadmin), validate('param', {
+  router.del(`/${resource}/:id`, validate('param', {
     id: joi.number().integer().positive().required(),
   }), async function (ctx) {
     const {id} = ctx.v.param
