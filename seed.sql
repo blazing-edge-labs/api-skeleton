@@ -13,12 +13,6 @@ INSERT INTO
 INSERT INTO
   user_role (user_id, role)
   VALUES (currval('user_id_seq'), 10);
-INSERT INTO
-  passwordless (token_remote, token_direct, user_id, created_at)
-  VALUES
-  ('11111111-0000-4000-8000-000000000000', '11111111-0000-4000-8000-000000000000', currval('user_id_seq'), now() - interval '1 year'),
-  ('11111111-0000-4000-8000-000000000001', '11111111-0000-4000-8000-000000000001', currval('user_id_seq'), now()),
-  ('11111111-0000-4000-8000-000000000002', '11111111-0000-4000-8000-000000000002', currval('user_id_seq'), now());
 
 -- user1@example.com/user1
 INSERT INTO
@@ -40,6 +34,14 @@ INSERT INTO
 INSERT INTO
   "user" (email, password)
   VALUES ('user3@example.com', '$2a$08$fsjARzE2Mb.5pL2K4P97TufUyjazZvJ0HI3V0gF1GCjRx0WdhMlaW');
+INSERT INTO
+  user_role (user_id, role)
+  VALUES (currval('user_id_seq'), 0);
+
+-- user4@example.com/null
+INSERT INTO
+  "user" (email)
+  VALUES ('user4@example.com');
 INSERT INTO
   user_role (user_id, role)
   VALUES (currval('user_id_seq'), 0);

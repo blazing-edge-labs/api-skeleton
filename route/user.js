@@ -14,13 +14,17 @@ const mailer = require('utils/mailer')
 
 router.use(responder)
 
-router.post('/register', validate('body', {
+// signup & passwordless login
+router.post('/signin', validate('body', {
   email: joi.string().email().required(),
-  password: joi.string().min(8).required(),
+  originInfo: joi.string().trim().allow('').max(555).optional(),
 }), async function (ctx) {
-  const {email, password} = ctx.v.body
-  await userRepo.create(email, password)
-  ctx.state.r = await userRepo.getByEmail(email)
+  const {email, originInfo} = ctx.v.body
+  const user = await userRepo.getByEmailSilent(email)
+  const {id: userId} = user || await userRepo.create(email)
+  const mailToken = await passwordTokenRepo.createById(userId)
+  await mailer.passwordlessLink(mailToken, email, originInfo)
+  ctx.state.r = {}
 })
 
 router.post('/auth', validate('body', {
@@ -31,6 +35,16 @@ router.post('/auth', validate('body', {
   const user = await userRepo.getByEmailPassword(email, password)
   const token = jwt.sign({id: user.id}, process.env.JWT_SECRET)
   ctx.state.r = {token}
+})
+
+router.post('/auth/token', validate('body', {
+  token: joi.string().guid().required(),
+}), async function (ctx) {
+  const {token} = ctx.v.body
+  const userId = await passwordTokenRepo.get(token)
+  await passwordTokenRepo.remove(userId)
+  const jwtToken = jwt.sign({id: userId}, process.env.JWT_SECRET)
+  ctx.state.r = {token: jwtToken}
 })
 
 router.get('/self', auth, async function (ctx) {
@@ -47,7 +61,7 @@ router.put('/self', auth, validate('body', {
 
 router.put('/self/email', auth, validate('body', {
   email: joi.string().email().required(),
-  password: joi.string().required(),
+  password: joi.string().optional(),
 }), async function (ctx) {
   const {id} = ctx.state.user
   const {email, password} = ctx.v.body
@@ -56,7 +70,7 @@ router.put('/self/email', auth, validate('body', {
 })
 
 router.put('/self/password', auth, validate('body', {
-  oldPassword: joi.string().required(),
+  oldPassword: joi.string().optional(),
   newPassword: joi.string().min(8).required(),
 }), async function (ctx) {
   const {id} = ctx.state.user
@@ -112,7 +126,7 @@ router.post('/recoverPassword', validate('body', {
 
 router.post('/changePassword', validate('body', {
   password: joi.string().min(8).required(),
-  token: joi.string().length(32).required(),
+  token: joi.string().guid().required(),
 }), async function (ctx) {
   const {password, token} = ctx.v.body
   const id = await passwordTokenRepo.get(token)

@@ -2,11 +2,11 @@
   "name": "api",
   "version": "2.0.0",
   "private": true,
-  "author": "ECP",
+  "author": "Blazing Edge",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/EastCoastProduct/api-skeleton-v2"
+    "url": "https://github.com/blazing-edge-labs/api-skeleton-v2"
   },
   "dependencies": {
     "babel-cli": "^6.24.1",
@@ -42,8 +42,7 @@
     "random-int": "^1.0.0",
     "slugify": "^1.1.0",
     "snyk": "^1.36.2",
-    "toml-require": "^1.1.0",
-    "uuid": "^3.1.0"
+    "toml-require": "^1.1.0"
   },
   "devDependencies": {
     "eslint": "^4.2.0",

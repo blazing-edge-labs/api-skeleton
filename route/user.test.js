@@ -4,23 +4,64 @@ const consts = require('const')
 const test = require('test')
 const mailer = require('utils/mailer')
 
-test.api('register', async function (t, request) {
-  const r = await request.post('/register').send({
-    email: 'new@example.com',
-    password: 'newnewnew',
+test.api('signin new', async function (t, request) {
+  mailer.stub.enable()
+  t.plan(6)
+
+  let mailToken
+
+  const {passwordlessLink} = mailer
+  mailer.passwordlessLink = (token, email, originInfo) => {
+    t.is(email, 'signin.new@example.com')
+    mailToken = token
+    return passwordlessLink(token, email, originInfo)
+  }
+
+  const r = await request.post('/signin').send({
+    email: 'signin.new@example.com',
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
-  t.ok(r.body.data, 'registered')
+
+  const r2 = await request.post('/auth/token').send({
+    token: mailToken,
+  })
+
+  t.is(r2.status, 200, 'success')
+  t.notok(r2.body.error, 'no error')
+  t.ok(_.get(r2.body, 'data.token'), 'token')
+  mailer.passwordlessLink = passwordlessLink
+  mailer.stub.restore()
 })
 
-test.api('register email taken', async function (t, request) {
-  const r = await request.post('/register').send({
-    email: 'new@example.com',
-    password: 'newnewnew',
+test.api('signin existing', async function (t, request) {
+  mailer.stub.enable()
+  t.plan(6)
+
+  let mailToken
+
+  const {passwordlessLink} = mailer
+  mailer.passwordlessLink = (token, email, originInfo) => {
+    t.is(email, 'superadmin@example.com')
+    mailToken = token
+    return passwordlessLink(token, email, originInfo)
+  }
+
+  const r = await request.post('/signin').send({
+    email: 'superadmin@example.com',
   })
-  t.is(r.status, 400, 'bad request')
-  t.is(r.body.error, 'user.duplicate', 'error code')
+  t.is(r.status, 200, 'success')
+  t.notok(r.body.error, 'no error')
+
+  const r2 = await request.post('/auth/token').send({
+    token: mailToken,
+  })
+
+  t.is(r2.status, 200, 'success')
+  t.notok(r2.body.error, 'no error')
+  t.ok(_.get(r2.body, 'data.token'), 'token')
+  mailer.passwordlessLink = passwordlessLink
+  mailer.stub.restore()
 })
 
 test.api('auth', async function (t, request) {
@@ -54,25 +95,31 @@ test.api('self update', async function (t, request) {
   t.is(r.status, 500, 'not implemented')
 })
 
-test.api('self change password', async function (t, request) {
-  const r = await request.put('/self/password').set(await test.auth('user1@example.com', 'user1')).send({
-    oldPassword: 'user1',
+test.api('self add and change password', async function (t, request) {
+  const r = await request.put('/self/password').set(await test.auth('user4@example.com')).send({
     newPassword: 'Password123',
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
 
-  const r2 = await request.post('/auth').send({
-    email: 'user1@example.com',
-    password: 'Password123',
+  const r2 = await request.put('/self/password').set(await test.auth('user4@example.com', 'Password123')).send({
+    oldPassword: 'Password123',
+    newPassword: 'Password1234',
   })
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
-  t.ok(_.get(r2.body, 'data.token'), 'token')
+
+  const r3 = await request.post('/auth').send({
+    email: 'user4@example.com',
+    password: 'Password1234',
+  })
+  t.is(r3.status, 200, 'success')
+  t.notok(r3.body.error, 'no error')
+  t.ok(_.get(r3.body, 'data.token'), 'token')
 })
 
 test.api('self change password with wrong password', async function (t, request) {
-  const r = await request.put('/self/password').set(await test.auth('user1@example.com', 'Password123')).send({
+  const r = await request.put('/self/password').set(await test.auth('user1@example.com', 'user1')).send({
     oldPassword: 'wrong password',
     newPassword: 'Password1234',
   })
@@ -81,11 +128,27 @@ test.api('self change password with wrong password', async function (t, request)
 
   const r2 = await request.post('/auth').send({
     email: 'user1@example.com',
-    password: 'Password123',
+    password: 'user1',
   })
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
   t.ok(_.get(r2.body, 'data.token'), 'token')
+})
+
+test.api('self change email with disabled password', async function (t, request) {
+  mailer.stub.enable()
+  const r = await request.post('/signin').send({
+    email: 'disabled.password.mail@example.com',
+  })
+  t.is(r.status, 200, 'success')
+  t.notok(r.body.error, 'no error')
+
+  const r2 = await request.put('/self/email').set(await test.auth('disabled.password.mail@example.com')).send({
+    email: 'disabled.password.mail2@example.com',
+  })
+  t.is(r2.status, 200, 'success')
+  t.notok(r2.body.error, 'no error')
+  mailer.stub.restore()
 })
 
 test.api('self change email', async function (t, request) {
@@ -123,7 +186,7 @@ test.api('self change email with wrong password', async function (t, request) {
 })
 
 test.api('self role get', async function (t, request) {
-  const r = await request.get('/self/role').set(await test.auth('new@example.com', 'newnewnew'))
+  const r = await request.get('/self/role').set(await test.auth('user1@example.com', 'user1'))
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
   t.deepEqual(r.body.data, {
@@ -142,7 +205,7 @@ test.api('password token nonexistant', async function (t, request) {
 
 test.api('password recover', async function (t, request) {
   mailer.stub.enable()
-  t.plan(7)
+  t.plan(8)
 
   let r, token
 
@@ -153,6 +216,11 @@ test.api('password recover', async function (t, request) {
     token = passedToken
     return forgotPassword(email, token)
   }
+
+  r = await request.post('/signin').send({
+    email: 'new@example.com',
+  })
+  t.is(r.status, 200, 'success')
 
   r = await request.post('/recoverPassword').send({
     email: 'new@example.com',

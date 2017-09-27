@@ -1,10 +1,12 @@
 const _ = require('lodash')
 const assert = require('assert')
+const jwt = require('jsonwebtoken')
 const supertest = require('supertest')
 const tape = require('tape')
 
 const {pgp} = require('db')
 const request = supertest(require('app').callback())
+const userRepo = require('repo/user')
 
 const cache = new Map()
 const store = new Map()
@@ -53,10 +55,16 @@ function apiOnly () {
 async function auth (email, password) {
   const key = `${email}-${password}`
   if (!cache.has(key)) {
-    const r = await request.post('/auth').send({email, password})
-    const token = _.get(r, 'body.data.token')
-    assert(token, 'error getting token in test auth helper')
-    cache.set(key, token)
+    if (password) {
+      const r = await request.post('/auth').send({email, password})
+      const token = _.get(r, 'body.data.token')
+      assert(token, 'error getting token in test auth helper')
+      cache.set(key, token)
+    } else {
+      const {id: userId} = await userRepo.getByEmail(email)
+      const token = jwt.sign({id: userId}, process.env.JWT_SECRET)
+      cache.set(key, token)
+    }
   }
   return {
     'Authorization': `Bearer ${cache.get(key)}`,

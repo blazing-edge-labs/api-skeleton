@@ -52,7 +52,4 @@ error.QueryFileError = pgp.errors.QueryFileError
 error.QueryResultError = pgp.errors.QueryResultError
 error.ValidationError = ValidationError
 
-error.queryResultErrorNoData = { code: pgp.errors.queryResultErrorCode.noData }
-error.queryResultErrorMultiple = { code: pgp.errors.queryResultErrorCode.multiple }
-
 module.exports = error
