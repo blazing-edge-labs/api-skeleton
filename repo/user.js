@@ -11,6 +11,7 @@ const map = mapper({
   id: 'id',
   createdAt: 'created_at',
   email: 'email',
+  hasPassword: (r) => !!r.password,
 })
 
 const columnSet = new helper.ColumnSet([
@@ -23,6 +24,8 @@ async function hashPassword (password) {
 }
 
 async function checkPasswordWithHash (password, hash) {
+  password = password || 'null'
+  hash = hash || 'null'
   return bcrypt.compare(password, hash).then(assert)
   .catch(error.AssertionError, error('user.password_wrong'))
 }
@@ -35,6 +38,7 @@ async function checkPassword (id, password) {
   `, [id])
   .catch(error.QueryResultError, error('user.not_found'))
   .catch(error.db('db.read'))
+  if (!password && !r.password) return
   await checkPasswordWithHash(password, r.password)
 }
 
@@ -50,7 +54,7 @@ async function create (email, password) {
         VALUES (currval('user_id_seq'), $[role])
     `, {
       email,
-      password: password ? await hashPassword(password) : '',
+      password: password ? await hashPassword(password) : null,
       role: consts.roleUser.none,
     })
     .catch({constraint: 'user_email_key'}, error('user.duplicate'))
@@ -113,6 +117,16 @@ async function getByEmail (email) {
   .then(map)
 }
 
+async function getByEmailSilent (email) {
+  return db.oneOrNone(`
+    SELECT *
+    FROM "user"
+    WHERE email = $1
+  `, [email])
+  .catch(error.db('db.read'))
+  .then((r) => r ? map(r) : null)
+}
+
 async function getByEmailPassword (email, password) {
   const user = await db.one(`
     SELECT *
@@ -152,6 +166,7 @@ module.exports = {
   updatePassword,
   updateEmail,
   getByEmail,
+  getByEmailSilent,
   getByEmailPassword,
   getById,
   getByIdPassword,
