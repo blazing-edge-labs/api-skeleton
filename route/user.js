@@ -40,9 +40,15 @@ router.post('/signin', validate('body', {
 router.post('/auth', validate('body', {
   email: joi.string().email().required(),
   password: joi.string().required(),
+  minRole: joi.any().valid(_.values(consts.roleUser)).optional(),
 }), async function (ctx) {
-  const {email, password} = ctx.v.body
+  const {email, password, minRole} = ctx.v.body
   const user = await userRepo.getByEmailPassword(email, password)
+
+  if (minRole && await userRepo.getRoleById(user.id) < minRole) {
+    throw new error.GenericError('role.insufficient', null, 401)
+  }
+
   const token = jwt.sign({id: user.id}, process.env.JWT_SECRET)
   ctx.state.r = {token}
 })

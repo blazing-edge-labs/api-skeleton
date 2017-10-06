@@ -156,6 +156,16 @@ test.api('auth wrong password', async function (t, request) {
   t.is(r.body.error, 'user.password_wrong', 'error code')
 })
 
+test.api('auth with insufficient role', async function (t, request) {
+  const r = await request.post('/auth').send({
+    email: 'user1@example.com',
+    password: 'user1',
+    minRole: consts.roleUser.admin,
+  })
+  t.is(r.status, 401, 'fails')
+  t.is(r.body.error, 'role.insufficient', 'error code')
+})
+
 test.api('self get', async function (t, request) {
   const r = await request.get('/self').set(await test.auth('user1@example.com', 'user1'))
   t.is(r.status, 200, 'success')
