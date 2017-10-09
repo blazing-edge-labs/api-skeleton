@@ -19,6 +19,7 @@ test.api('signin new', async function (t, request) {
 
   const r = await request.post('/signin').send({
     email: 'signin.new@example.com',
+    allowNew: true,
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
@@ -42,13 +43,13 @@ test.api('signin existing', async function (t, request) {
 
   const {passwordlessLink} = mailer
   mailer.passwordlessLink = (token, email, originInfo) => {
-    t.is(email, 'superadmin@example.com')
+    t.is(email, 'user1@example.com')
     mailToken = token
     return passwordlessLink(token, email, originInfo)
   }
 
   const r = await request.post('/signin').send({
-    email: 'superadmin@example.com',
+    email: 'user1@example.com',
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
@@ -60,6 +61,78 @@ test.api('signin existing', async function (t, request) {
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
   t.ok(_.get(r2.body, 'data.token'), 'token')
+  mailer.passwordlessLink = passwordlessLink
+  mailer.stub.restore()
+})
+
+test.api('signin not existing', async function (t, request) {
+  mailer.stub.enable()
+  t.plan(2)
+
+  const {passwordlessLink} = mailer
+  mailer.passwordlessLink = (token, email, originInfo) => {
+    t.fail('passwordlessLink called')
+    return passwordlessLink(token, email, originInfo)
+  }
+
+  const r = await request.post('/signin').send({
+    email: 'not.existent@example.com',
+  })
+  t.is(r.status, 400, 'fail')
+  t.ok(r.body.error, 'with error')
+
+  mailer.passwordlessLink = passwordlessLink
+  mailer.stub.restore()
+})
+
+test.api('signin superadmin', async function (t, request) {
+  mailer.stub.enable()
+  t.plan(6)
+
+  let mailToken
+
+  const {passwordlessLink} = mailer
+  mailer.passwordlessLink = (token, email, originInfo) => {
+    t.is(email, 'superadmin@example.com')
+    mailToken = token
+    return passwordlessLink(token, email, originInfo)
+  }
+
+  const r = await request.post('/signin').send({
+    email: 'superadmin@example.com',
+    minRole: consts.roleUser.superadmin,
+  })
+  t.is(r.status, 200, 'success')
+  t.notok(r.body.error, 'no error')
+
+  const r2 = await request.post('/auth/token').send({
+    token: mailToken,
+  })
+
+  t.is(r2.status, 200, 'success')
+  t.notok(r2.body.error, 'no error')
+  t.ok(_.get(r2.body, 'data.token'), 'token')
+  mailer.passwordlessLink = passwordlessLink
+  mailer.stub.restore()
+})
+
+test.api('signin with insufficient role', async function (t, request) {
+  mailer.stub.enable()
+  t.plan(2)
+
+  const {passwordlessLink} = mailer
+  mailer.passwordlessLink = (token, email, originInfo) => {
+    t.fail('passwordlessLink called')
+    return passwordlessLink(token, email, originInfo)
+  }
+
+  const r = await request.post('/signin').send({
+    email: 'admin@example.com',
+    minRole: consts.roleUser.superadmin,
+  })
+  t.is(r.status, 401, 'fail')
+  t.ok(r.body.error, 'with error')
+
   mailer.passwordlessLink = passwordlessLink
   mailer.stub.restore()
 })
@@ -81,6 +154,16 @@ test.api('auth wrong password', async function (t, request) {
   })
   t.is(r.status, 400, 'bad request')
   t.is(r.body.error, 'user.password_wrong', 'error code')
+})
+
+test.api('auth with insufficient role', async function (t, request) {
+  const r = await request.post('/auth').send({
+    email: 'user1@example.com',
+    password: 'user1',
+    minRole: consts.roleUser.admin,
+  })
+  t.is(r.status, 401, 'fails')
+  t.is(r.body.error, 'role.insufficient', 'error code')
 })
 
 test.api('self get', async function (t, request) {
@@ -139,6 +222,7 @@ test.api('self change email with disabled password', async function (t, request)
   mailer.stub.enable()
   const r = await request.post('/signin').send({
     email: 'disabled.password.mail@example.com',
+    allowNew: true,
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
@@ -219,6 +303,7 @@ test.api('password recover', async function (t, request) {
 
   r = await request.post('/signin').send({
     email: 'new@example.com',
+    allowNew: true,
   })
   t.is(r.status, 200, 'success')
 

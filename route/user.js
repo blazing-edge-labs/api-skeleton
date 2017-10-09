@@ -3,6 +3,7 @@ const joi = require('joi')
 const jwt = require('jsonwebtoken')
 const router = new (require('koa-router'))()
 
+const error = require('error')
 const auth = require('middleware/auth')
 const consts = require('const')
 const passwordTokenRepo = require('repo/passwordToken')
@@ -18,11 +19,20 @@ router.use(responder)
 router.post('/signin', validate('body', {
   email: joi.string().email().required(),
   originInfo: joi.string().trim().allow('').max(555).optional(),
+  allowNew: joi.boolean().default(false),
+  minRole: joi.any().valid(_.values(consts.roleUser)).optional(),
 }), async function (ctx) {
-  const {email, originInfo} = ctx.v.body
-  const user = await userRepo.getByEmailSilent(email)
-  const {id: userId} = user || await userRepo.create(email)
-  const mailToken = await passwordTokenRepo.createById(userId)
+  const {email, originInfo, allowNew, minRole} = ctx.v.body
+
+  const user = allowNew
+    ? await userRepo.getByEmailSilent(email) || await userRepo.create(email)
+    : await userRepo.getByEmail(email)
+
+  if (minRole && await userRepo.getRoleById(user.id) < minRole) {
+    throw new error.GenericError('role.insufficient', null, 401)
+  }
+
+  const mailToken = await passwordTokenRepo.createById(user.id)
   await mailer.passwordlessLink(mailToken, email, originInfo)
   ctx.state.r = {}
 })
@@ -30,9 +40,15 @@ router.post('/signin', validate('body', {
 router.post('/auth', validate('body', {
   email: joi.string().email().required(),
   password: joi.string().required(),
+  minRole: joi.any().valid(_.values(consts.roleUser)).optional(),
 }), async function (ctx) {
-  const {email, password} = ctx.v.body
+  const {email, password, minRole} = ctx.v.body
   const user = await userRepo.getByEmailPassword(email, password)
+
+  if (minRole && await userRepo.getRoleById(user.id) < minRole) {
+    throw new error.GenericError('role.insufficient', null, 401)
+  }
+
   const token = jwt.sign({id: user.id}, process.env.JWT_SECRET)
   ctx.state.r = {token}
 })
