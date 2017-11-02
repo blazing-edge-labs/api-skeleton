@@ -2,7 +2,7 @@ const _ = require('lodash')
 
 const consts = require('const')
 const test = require('test')
-const mailer = require('utils/mailer')
+const mailer = require('mail')
 
 test.api('signin new', async function (t, request) {
   mailer.stub.enable()

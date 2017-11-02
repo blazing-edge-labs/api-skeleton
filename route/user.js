@@ -11,7 +11,7 @@ const responder = require('middleware/responder')
 const roleUser = require('middleware/roleUser')
 const userRepo = require('repo/user')
 const validate = require('middleware/validate')
-const mailer = require('utils/mailer')
+const mailer = require('mail')
 
 router.use(responder)
 

@@ -1,26 +1,27 @@
 const _ = require('lodash')
-const nodemailer = require('nodemailer')
+const connString = require('connection-string')
 const constants = require('const')
+const nodemailer = require('nodemailer')
 const url = require('url')
 
-const { env } = process
+const conn = connString(process.env.MAIL_URL)
 
 const transport = nodemailer.createTransport({
-  host: env.MAIL_HOST,
-  port: env.MAIL_PORT,
+  host: conn.hostname,
+  port: conn.port,
   auth: {
-    user: env.MAIL_USER,
-    pass: env.MAIL_PASS,
+    user: conn.user,
+    pass: conn.password,
   },
 })
 
 const sendEmail = options => transport.sendMail(options)
 
 function forgotPassword (email, token) {
-  const link = `${env.WEB_URL}${constants.webPath.recoverPasswordPrefix}${token}`
+  const link = `${process.env.WEB_URL}${constants.webPath.recoverPasswordPrefix}${token}`
 
   return sendEmail({
-    from: `${env.MAIL_FROM_NAME} <${env.MAIL_FROM_ADDRESS}>`,
+    from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM_ADDRESS}>`,
     to: email,
     subject: 'Password recovery',
     text: 'Please use the link to reset your password.',
@@ -36,13 +37,13 @@ function passwordlessLink (token, email, originInfo) {
   .mapValues(encodeURIComponent)
   .value()
 
-  const linkObject = _(url.parse(env.PASSWORDLESS_LOGIN_PAGE, true))
+  const linkObject = _(url.parse(process.env.PASSWORDLESS_LOGIN_PAGE, true))
   .omit('search')
   .merge({query})
   .value()
 
   return sendEmail({
-    from: `${env.MAIL_FROM_NAME} <${env.MAIL_FROM_ADDRESS}>`,
+    from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM_ADDRESS}>`,
     to: email,
     subject: 'Login',
     text: 'Please use the link to log in.',

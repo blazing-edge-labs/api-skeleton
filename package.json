@@ -16,6 +16,7 @@
     "babel-register": "^6.24.1",
     "bcrypt": "^1.0.2",
     "bluebird": "^3.5.0",
+    "connection-string": "^0.4.1",
     "crypto-random-string": "^1.0.0",
     "dotenv-safe": "^4.0.4",
     "is-promise": "^2.1.0",
