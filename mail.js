@@ -1,19 +1,30 @@
 const _ = require('lodash')
 const connString = require('connection-string')
 const constants = require('const')
-const nodemailer = require('nodemailer')
+const mailer = require('nodemailer')
 const url = require('url')
+
+function base64decode (str) {
+  return Buffer.from(str, 'base64').toString('ascii')
+}
 
 const conn = connString(process.env.MAIL_URL)
 
-const transport = nodemailer.createTransport({
+if (conn.params.base64) {
+  conn.password = base64decode(conn.password)
+  conn.user = base64decode(conn.user)
+}
+
+const transport = mailer.createTransport({
   host: conn.hostname,
   port: conn.port,
   auth: {
     user: conn.user,
     pass: conn.password,
   },
+  secure: conn.protocol === 'smtps',
 })
+transport.verify().catch(console.error)
 
 const sendEmail = options => transport.sendMail(options)
 
