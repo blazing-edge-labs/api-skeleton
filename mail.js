@@ -10,7 +10,7 @@ function base64decode (str) {
 
 const conn = connString(process.env.MAIL_URL)
 
-if (_.get(conn, 'params.base64'), false) {
+if (_.get(conn, 'params.base64', false)) {
   conn.password = base64decode(conn.password)
   conn.user = base64decode(conn.user)
 }
