@@ -1,6 +1,6 @@
 const _ = require('lodash')
 
-const consts = require('const')
+const konst = require('konst')
 const test = require('test')
 const mailer = require('mail')
 
@@ -100,7 +100,7 @@ test.api('signin superadmin', async function (t, request) {
 
   const r = await request.post('/signin').send({
     email: 'superadmin@example.com',
-    minRole: consts.roleUser.superadmin,
+    minRole: konst.roleUser.superadmin,
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
@@ -128,7 +128,7 @@ test.api('signin with insufficient role', async function (t, request) {
 
   const r = await request.post('/signin').send({
     email: 'admin@example.com',
-    minRole: consts.roleUser.superadmin,
+    minRole: konst.roleUser.superadmin,
   })
   t.is(r.status, 401, 'fail')
   t.ok(r.body.error, 'with error')
@@ -160,7 +160,7 @@ test.api('auth with insufficient role', async function (t, request) {
   const r = await request.post('/auth').send({
     email: 'user1@example.com',
     password: 'user1',
-    minRole: consts.roleUser.admin,
+    minRole: konst.roleUser.admin,
   })
   t.is(r.status, 401, 'fails')
   t.is(r.body.error, 'role.insufficient', 'error code')
@@ -274,7 +274,7 @@ test.api('self role get', async function (t, request) {
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
   t.deepEqual(r.body.data, {
-    user: consts.roleUser.none,
+    user: konst.roleUser.none,
     admin: false,
   })
 })
@@ -335,7 +335,7 @@ test.api('password recover', async function (t, request) {
 test.api('role put admin by superadmin', async function (t, request) {
   const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.data.id')
   const r = await request.put(`/user/${id}/role`).set(await test.auth('superadmin@example.com', 'superadmin')).send({
-    role: consts.roleUser.admin,
+    role: konst.roleUser.admin,
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
@@ -344,7 +344,7 @@ test.api('role put admin by superadmin', async function (t, request) {
 test.api('role put admin by admin', async function (t, request) {
   const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.data.id')
   const r = await request.put(`/user/${id}/role`).set(await test.auth('admin@example.com', 'admin')).send({
-    role: consts.roleUser.admin,
+    role: konst.roleUser.admin,
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
@@ -353,7 +353,7 @@ test.api('role put admin by admin', async function (t, request) {
 test.api('role put superadmin by admin', async function (t, request) {
   const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.data.id')
   const r = await request.put(`/user/${id}/role`).set(await test.auth('admin@example.com', 'admin')).send({
-    role: consts.roleUser.superadmin,
+    role: konst.roleUser.superadmin,
   })
   t.is(r.status, 401, 'unauthorized')
   t.is(r.body.error, 'role.insufficient', 'error code')
@@ -362,7 +362,7 @@ test.api('role put superadmin by admin', async function (t, request) {
 test.api('role put none by admin', async function (t, request) {
   const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.data.id')
   const r = await request.put(`/user/${id}/role`).set(await test.auth('admin@example.com', 'admin')).send({
-    role: consts.roleUser.none,
+    role: konst.roleUser.none,
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')

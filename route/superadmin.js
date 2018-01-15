@@ -1,17 +1,17 @@
 const joi = require('joi')
 const router = new (require('koa-router'))()
 
-const consts = require('const')
-const auth = require('middleware/auth')
-const roleUser = require('middleware/roleUser')
-const responder = require('middleware/responder')
-const validate = require('middleware/validate')
 const adminRepo = require('repo/superadmin')
+const auth = require('middleware/auth')
+const konst = require('konst')
 const resources = adminRepo.resourceList
+const responder = require('middleware/responder')
+const roleUser = require('middleware/roleUser')
+const validate = require('middleware/validate')
 
 router.use(responder)
 router.use(auth)
-router.use(roleUser.gte(consts.roleUser.superadmin))
+router.use(roleUser.gte(konst.roleUser.superadmin))
 
 resources.forEach(resource => {
   router.get(`/${resource}/many`, validate('query', {

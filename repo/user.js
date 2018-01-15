@@ -2,7 +2,7 @@ const _ = require('lodash')
 const assert = require('assert')
 const bcrypt = require('bcrypt')
 
-const consts = require('const')
+const konst = require('konst')
 const error = require('error')
 const {db, helper} = require('db')
 const {mapper} = require('repo/base')
@@ -44,20 +44,27 @@ async function checkPassword (id, password) {
 
 async function create (email, password) {
   return db.tx(async function (t) {
-    return t.one(`
+    const user = await t.one(`
       INSERT INTO
         "user" (email, password)
         VALUES ($[email], $[password])
-        RETURNING id;
-      INSERT INTO
-        user_role (user_id, role)
-        VALUES (currval('user_id_seq'), $[role])
+        RETURNING id
     `, {
       email,
       password: password ? await hashPassword(password) : null,
-      role: consts.roleUser.none,
+    })
+
+    await t.none(`
+      INSERT INTO
+        user_role (user_id, role)
+        VALUES ($[id], $[role])
+    `, {
+      id: user.id,
+      role: konst.roleUser.none,
     })
     .catch({constraint: 'user_email_key'}, error('user.duplicate'))
+
+    return user
   })
   .catch(error.db('db.write'))
 }
@@ -145,7 +152,7 @@ async function getRoleById (id) {
     FROM user_role
     WHERE user_id = $[id]
   `, {id})
-  .catchReturn(error.QueryResultError, consts.roleUser.none)
+  .catchReturn(error.QueryResultError, konst.roleUser.none)
   .catch(error.db('db.read'))
   .get('role')
 }

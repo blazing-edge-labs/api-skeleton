@@ -1,6 +1,6 @@
 const _ = require('lodash')
 const connString = require('connection-string')
-const constants = require('const')
+const konst = require('konst')
 const mailer = require('nodemailer')
 const url = require('url')
 
@@ -29,7 +29,7 @@ transport.verify().catch(console.error)
 const sendEmail = options => transport.sendMail(options)
 
 function forgotPassword (email, token) {
-  const link = `${process.env.WEB_URL}${constants.webPath.recoverPasswordPrefix}${token}`
+  const link = `${process.env.WEB_URL}${konst.webPath.recoverPasswordPrefix}${token}`
 
   return sendEmail({
     from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM_ADDRESS}>`,

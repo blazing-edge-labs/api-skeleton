@@ -3,15 +3,15 @@ const joi = require('joi')
 const jwt = require('jsonwebtoken')
 const router = new (require('koa-router'))()
 
-const error = require('error')
 const auth = require('middleware/auth')
-const consts = require('const')
+const error = require('error')
+const konst = require('konst')
+const mailer = require('mail')
 const passwordTokenRepo = require('repo/passwordToken')
 const responder = require('middleware/responder')
 const roleUser = require('middleware/roleUser')
 const userRepo = require('repo/user')
 const validate = require('middleware/validate')
-const mailer = require('mail')
 
 router.use(responder)
 
@@ -20,7 +20,7 @@ router.post('/signin', validate('body', {
   email: joi.string().email().required(),
   originInfo: joi.string().trim().allow('').max(555).optional(),
   allowNew: joi.boolean().default(false),
-  minRole: joi.any().valid(_.values(consts.roleUser)).optional(),
+  minRole: joi.any().valid(_.values(konst.roleUser)).optional(),
 }), async function (ctx) {
   const {email, originInfo, allowNew, minRole} = ctx.v.body
 
@@ -40,7 +40,7 @@ router.post('/signin', validate('body', {
 router.post('/auth', validate('body', {
   email: joi.string().email().required(),
   password: joi.string().required(),
-  minRole: joi.any().valid(_.values(consts.roleUser)).optional(),
+  minRole: joi.any().valid(_.values(konst.roleUser)).optional(),
 }), async function (ctx) {
   const {email, password, minRole} = ctx.v.body
   const user = await userRepo.getByEmailPassword(email, password)
@@ -101,28 +101,28 @@ router.get('/self/role', auth, async function (ctx) {
   const user = await userRepo.getRoleById(id)
   ctx.state.r = {
     user,
-    admin: user >= consts.roleUser.admin,
+    admin: user >= konst.roleUser.admin,
   }
 })
 
-router.get('/user/:id', auth, roleUser.gte(consts.roleUser.admin), validate('param', {
+router.get('/user/:id', auth, roleUser.gte(konst.roleUser.admin), validate('param', {
   id: joi.number().integer().positive().required(),
 }), async function (ctx) {
   const {id} = ctx.v.param
   ctx.state.r = await userRepo.getById(id)
 })
 
-router.get('/user/email/:email', auth, roleUser.gte(consts.roleUser.admin), validate('param', {
+router.get('/user/email/:email', auth, roleUser.gte(konst.roleUser.admin), validate('param', {
   email: joi.string().email().required(),
 }), async function (ctx) {
   const {email} = ctx.v.param
   ctx.state.r = await userRepo.getByEmail(email)
 })
 
-router.put('/user/:id/role', auth, roleUser.gte(consts.roleUser.admin), validate('param', {
+router.put('/user/:id/role', auth, roleUser.gte(konst.roleUser.admin), validate('param', {
   id: joi.number().integer().positive().required(),
 }), validate('body', {
-  role: joi.any().valid(_.values(consts.roleUser)).required(),
+  role: joi.any().valid(_.values(konst.roleUser)).required(),
 }), roleUser.gte('v.body.role'), async function (ctx) {
   const {id} = ctx.v.param
   const {role} = ctx.v.body
