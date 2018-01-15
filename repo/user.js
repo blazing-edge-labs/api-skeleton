@@ -53,6 +53,7 @@ async function create (email, password) {
       email,
       password: password ? await hashPassword(password) : null,
     })
+    .catch({constraint: 'user_email_key'}, error('user.duplicate'))
 
     await t.none(`
       INSERT INTO
@@ -62,7 +63,6 @@ async function create (email, password) {
       id: user.id,
       role: konst.roleUser.none,
     })
-    .catch({constraint: 'user_email_key'}, error('user.duplicate'))
 
     return user
   })
