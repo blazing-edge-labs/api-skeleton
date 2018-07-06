@@ -34,9 +34,9 @@ list = [
 
   'order/create',
 
-  'vendor/account/read,
-  'vendor/account/update,
-  'vendor/account/delete,
+  'vendor/account/read',
+  'vendor/account/update',
+  'vendor/account/delete',
   'vendor/orders/read',
   'vendor/orders/cancel',
   'vendor/orders/refund',
