@@ -9,11 +9,11 @@ In this solution:
 
 ```sql
 ALTER TABLE "user"
-  ADD "roles" INTEGER[] NOT NULL DEFAULT '{}',
+  ADD "roles" INTEGER[] NOT NULL DEFAULT '{}';
 
 ```
 
-All permission and roles are define as constants in `konst.toml`:
+All permissions and roles are defined as constants in `konst.toml`:
 
 ```toml
 [role.superadmin]
@@ -44,7 +44,7 @@ list = [
 ```
 
 All possible permission are listed under `permission.list`.
-Each role is stored in DB using respective `val` number. The `can` field holds a "permission selector", and it defines which permissions are included in respective role.
+Each role is stored in DB using respective `val` number. The `can` field holds a "permission selector", and it defines which permissions are included in the respective role.
 
 Although it's possible to include user roles in the JWT access token to avoid getting user from DB on each request, that usually means that role changes are not enforced immediately, specially if the access token is long living.
 Instead, we are going to load entire user on each authorization (consider to cache users once it becomes slow.)
@@ -154,11 +154,3 @@ module.exports = {
 }
 
 ```
-
-
-
-
-
-
-
-
