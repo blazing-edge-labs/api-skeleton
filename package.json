@@ -66,8 +66,8 @@
     "dev": "run-p -s dev:server",
     "dev:server": "nodemon -q -I -e js,json -i package.json -- -r babel-register index.js",
     "test": "tape -r babel-register -r ./env **/*.test.js | tap-spec",
-    "db:recreate": "run-s -s 'migrate recreate'",
-    "db:seed": "run-s -s 'migrate seed'",
+    "db:recreate": "run-s -s \"migrate recreate\"",
+    "db:seed": "run-s -s \"migrate seed\"",
     "ci": "run-s -s lint:check db:recreate db:seed test"
   }
 }
