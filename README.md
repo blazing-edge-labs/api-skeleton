@@ -26,6 +26,18 @@ Such DB can be easily viewed using another docker image:
 $ docker run -p 8081:8081 --link api_db:db -e DATABASE_URL=postgres://api:api@db:5432/api?sslmode=disable --rm sosedoff/pgweb
 ```
 
+Create a `.env` file based on `.env.example`:
+
+```
+NODE_ENV=development
+LOG=5
+PORT=3000
+WEB_URL=localhost:7000
+DATABASE_URL=postgres://api:api@localhost:5432/api
+BCRYPT_ROUNDS=10
+...
+```
+
 To (re)initialize the DB, and to run all tests:
 
 ```
