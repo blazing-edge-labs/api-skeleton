@@ -10,6 +10,7 @@
       "MemberExpression": 0,
       "SwitchCase": 1
     }],
-    "no-else-return": "error"
+    "no-else-return": "error",
+    "promise/valid-params": 0
   }
 }
