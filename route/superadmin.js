@@ -18,7 +18,7 @@ resources.forEach(resource => {
     validate.query({
       ids: joi.array().items(joi.number().integer()),
     }),
-    async (ctx) => {
+    async function (ctx) {
       const {ids} = ctx.v.query
       ctx.state.r = await adminRepo[resource].getMany(ids)
     }
@@ -31,7 +31,7 @@ resources.forEach(resource => {
       perPage: joi.number(),
       filter: joi.object(),
     }),
-    async (ctx) => {
+    async function (ctx) {
       const {query} = ctx.v
       const count = await adminRepo[resource].getAllCount()
       ctx.state.r = {
@@ -61,7 +61,7 @@ resources.forEach(resource => {
     }
   )
 
-  router.post(`/${resource}`, async (ctx) => {
+  router.post(`/${resource}`, async function (ctx) {
     ctx.state.r = await adminRepo[resource].create(ctx.request.body)
   })
 

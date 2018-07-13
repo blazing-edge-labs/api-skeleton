@@ -23,7 +23,7 @@ router.post('/signin',
     allowNew: joi.boolean().default(false),
     minRole: joi.any().valid(_.values(konst.roleUser)).optional(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     const {email, originInfo, allowNew, minRole} = ctx.v.body
 
     const user = allowNew
@@ -46,7 +46,7 @@ router.post('/auth',
     password: joi.string().required(),
     minRole: joi.any().valid(_.values(konst.roleUser)).optional(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     const {email, password, minRole} = ctx.v.body
     const user = await userRepo.getByEmailPassword(email, password)
 
@@ -63,7 +63,7 @@ router.post('/auth/token',
   validate.body({
     token: joi.string().guid().required(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     const {token} = ctx.v.body
     const userId = await passwordTokenRepo.get(token)
     await passwordTokenRepo.remove(userId)
@@ -73,7 +73,7 @@ router.post('/auth/token',
 )
 
 router.get('/self', auth,
-  async (ctx) => {
+  async function (ctx) {
     const {id} = ctx.state.user
     ctx.state.r = await userRepo.getById(id)
   }
@@ -83,7 +83,7 @@ router.put('/self', auth,
   validate.body({
     // add
   }),
-  async (ctx) => {
+  async function (ctx) {
     // const {id} = ctx.state.user
     throw new Error('not implemented')
   }
@@ -94,7 +94,7 @@ router.put('/self/email', auth,
     email: joi.string().email().required(),
     password: joi.string().optional(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     const {id} = ctx.state.user
     const {email, password} = ctx.v.body
     await userRepo.checkPassword(id, password)
@@ -107,7 +107,7 @@ router.put('/self/password', auth,
     oldPassword: joi.string().optional(),
     newPassword: joi.string().min(8).required(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     const {id} = ctx.state.user
     const {oldPassword, newPassword} = ctx.v.body
     await userRepo.checkPassword(id, oldPassword)
@@ -117,7 +117,7 @@ router.put('/self/password', auth,
 )
 
 router.get('/self/role', auth,
-  async (ctx) => {
+  async function (ctx) {
     const {id} = ctx.state.user
     const user = await userRepo.getRoleById(id)
     ctx.state.r = {
@@ -131,7 +131,7 @@ router.get('/user/:id', auth, roleUser.gte(konst.roleUser.admin),
   validate.param({
     id: joi.number().integer().positive().required(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     const {id} = ctx.v.param
     ctx.state.r = await userRepo.getById(id)
   }
@@ -141,7 +141,7 @@ router.get('/user/email/:email', auth, roleUser.gte(konst.roleUser.admin),
   validate.param({
     email: joi.string().email().required(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     const {email} = ctx.v.param
     ctx.state.r = await userRepo.getByEmail(email)
   }
@@ -155,7 +155,7 @@ router.put('/user/:id/role', auth, roleUser.gte(konst.roleUser.admin),
     role: joi.any().valid(_.values(konst.roleUser)).required(),
   }),
   roleUser.gte('v.body.role'),
-  async (ctx) => {
+  async function (ctx) {
     const {id} = ctx.v.param
     const {role} = ctx.v.body
     await userRepo.setRoleById(id, role)
@@ -167,7 +167,7 @@ router.post('/recoverPassword',
   validate.body({
     email: joi.string().email().required(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     // TODO throttle
     const {email} = ctx.v.body
     const token = await passwordTokenRepo.createByEmail(email)
@@ -181,7 +181,7 @@ router.post('/changePassword',
     password: joi.string().min(8).required(),
     token: joi.string().guid().required(),
   }),
-  async (ctx) => {
+  async function (ctx) {
     const {password, token} = ctx.v.body
     const id = await passwordTokenRepo.get(token)
     await userRepo.updatePassword(id, password)
