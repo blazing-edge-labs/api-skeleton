@@ -9,14 +9,7 @@ const defaults = {
   convert: true,
 }
 
-const paths = {
-  body: 'request.body',
-  header: 'request.header',
-  param: 'params',
-  query: 'request.query',
-}
-
-const validator = (path, target) => (schema, options = {}) => {
+function validator (path, target, schema, options = {}) {
   const opts = _.defaults(options, defaults)
   const schemaCompiled = joi.compile(schema)
 
@@ -35,4 +28,9 @@ const validator = (path, target) => (schema, options = {}) => {
   }
 }
 
-module.exports = _.mapValues(paths, validator)
+module.exports = {
+  body: validator.bind(null, 'request.body', 'body'),
+  header: validator.bind(null, 'request.header', 'header'),
+  param: validator.bind(null, 'params', 'param'),
+  query: validator.bind(null, 'request.query', 'query'),
+}
