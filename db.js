@@ -1,5 +1,9 @@
 const pgp = require('pg-promise')()
 
+// https://github.com/brianc/node-pg-types/issues/50
+const DATE_OID = 1082
+pgp.pg.types.setTypeParser(DATE_OID, v => v)
+
 const queryFiles = new Map()
 
 function sql (filename) {
