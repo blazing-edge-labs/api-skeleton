@@ -6,7 +6,7 @@
   "rules": {
     "comma-dangle": ["error", "always-multiline"],
     "indent": ["error", 2, {
-      "CallExpression": {"arguments": 0},
+      "CallExpression": {"arguments": "off"},
       "MemberExpression": 0,
       "SwitchCase": 1
     }],
