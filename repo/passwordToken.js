@@ -3,14 +3,14 @@ const randomString = require('crypto-random-string')
 
 const error = require('error')
 const userRepo = require('repo/user')
-const {db} = require('db')
+const { db } = require('db')
 
 async function create (userId) {
   const token = randomString(32)
   await remove(userId)
   return db.one('INSERT INTO password_token (user_id, token) VALUES ($1, $2) RETURNING token', [userId, token])
   .get('token')
-  .catch({constraint: 'password_token_pkey'}, error.db('db.write'))
+  .catch({ constraint: 'password_token_pkey' }, error.db('db.write'))
   .catch(error.db('db.write'))
 }
 

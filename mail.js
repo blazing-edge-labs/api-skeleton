@@ -43,14 +43,14 @@ function forgotPassword (email, token) {
 }
 
 function passwordlessLink (token, email, originInfo) {
-  const query = _({t: token, o: originInfo})
+  const query = _({ t: token, o: originInfo })
   .omitBy(_.isEmpty)
   .mapValues(encodeURIComponent)
   .value()
 
   const linkObject = _(url.parse(process.env.PASSWORDLESS_LOGIN_PAGE, true))
   .omit('search')
-  .merge({query})
+  .merge({ query })
   .value()
 
   return sendEmail({

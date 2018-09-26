@@ -16,13 +16,13 @@ function validator (path, target, schema, options = {}) {
   return async function (ctx, next) {
     const input = _.get(ctx, path)
 
-    const {error: err, value: data} = schemaCompiled.validate(input, opts)
+    const { error: err, value: data } = schemaCompiled.validate(input, opts)
     if (err) {
       err.target = target
       throw new error.ValidationError('http.bad_request', err, 400)
     }
 
-    _.update(ctx, `v.${target}`, prevData => ({...prevData, ...data}))
+    _.update(ctx, `v.${target}`, prevData => ({ ...prevData, ...data }))
 
     await next()
   }

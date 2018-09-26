@@ -1,5 +1,5 @@
 const error = require('error')
-const {db, helper} = require('db')
+const { db, helper } = require('db')
 const userRepo = require('repo/user')
 
 // [ ] Todo: implement list filtering
@@ -21,9 +21,9 @@ const resourceMaps = {
 const resourceList = Object.keys(resourceMaps)
 
 const getAll = (resource) => {
-  const {map} = resourceMaps[resource]
+  const { map } = resourceMaps[resource]
   return async (query) => {
-    const {sort, page, perPage} = query
+    const { sort, page, perPage } = query
     return db.any(`
       SELECT * FROM $1~
       ORDER BY $2^ $3^
@@ -36,7 +36,7 @@ const getAll = (resource) => {
 }
 
 const getMany = (resource) => {
-  const {map} = resourceMaps[resource]
+  const { map } = resourceMaps[resource]
   return async (ids) => {
     return db.any(`
       SELECT * FROM $1~ 
@@ -56,7 +56,7 @@ const getAllCount = (resource) => {
 }
 
 const getById = (resource) => {
-  const {map} = resourceMaps[resource]
+  const { map } = resourceMaps[resource]
   return async (id) => {
     return db.one(`
       SELECT *
@@ -76,7 +76,7 @@ const remove = (resource) => {
 }
 
 const create = (resource) => {
-  const {columnSet} = resourceMaps[resource]
+  const { columnSet } = resourceMaps[resource]
   return async (data) => {
     return db.one(helper.insert(data, columnSet) + ' RETURNING id')
     .catch(error.db('db.write'))
@@ -84,7 +84,7 @@ const create = (resource) => {
 }
 
 const update = (resource) => {
-  const {columnSet} = resourceMaps[resource]
+  const { columnSet } = resourceMaps[resource]
   return async (id, data) => {
     return db.one(helper.update(data, columnSet) + ' WHERE id = $1 RETURNING id', id)
   }
@@ -107,4 +107,4 @@ resourceList.forEach(resource => {
 })
 
 // Override generic controllers
-module.exports.user.create = ({email, password}) => userRepo.create(email, password)
+module.exports.user.create = ({ email, password }) => userRepo.create(email, password)

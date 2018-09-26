@@ -19,7 +19,7 @@ resources.forEach(resource => {
       ids: joi.array().items(joi.number().integer()),
     }),
     async function (ctx) {
-      const {ids} = ctx.v.query
+      const { ids } = ctx.v.query
       ctx.state.r = await adminRepo[resource].getMany(ids)
     }
   )
@@ -32,7 +32,7 @@ resources.forEach(resource => {
       filter: joi.object(),
     }),
     async function (ctx) {
-      const {query} = ctx.v
+      const { query } = ctx.v
       const count = await adminRepo[resource].getAllCount()
       ctx.state.r = {
         items: await adminRepo[resource].getAll(query),
@@ -46,7 +46,7 @@ resources.forEach(resource => {
       id: joi.number().integer().positive().required(),
     }),
     async function (ctx) {
-      const {id} = ctx.v.param
+      const { id } = ctx.v.param
       ctx.state.r = await adminRepo[resource].getById(id)
     }
   )
@@ -56,7 +56,7 @@ resources.forEach(resource => {
       id: joi.number().integer().positive().required(),
     }),
     async function (ctx) {
-      const {id} = ctx.v.param
+      const { id } = ctx.v.param
       ctx.state.r = await adminRepo[resource].update(id, ctx.request.body)
     }
   )
@@ -70,7 +70,7 @@ resources.forEach(resource => {
       id: joi.number().integer().positive().required(),
     }),
     async function (ctx) {
-      const {id} = ctx.v.param
+      const { id } = ctx.v.param
       await adminRepo[resource].remove(id)
       ctx.state.r = {}
     }

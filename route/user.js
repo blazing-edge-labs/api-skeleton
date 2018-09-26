@@ -24,7 +24,7 @@ router.post('/signin',
     minRole: joi.any().valid(_.values(konst.roleUser)).optional(),
   }),
   async function (ctx) {
-    const {email, originInfo, allowNew, minRole} = ctx.v.body
+    const { email, originInfo, allowNew, minRole } = ctx.v.body
 
     const user = allowNew
       ? await userRepo.getByEmailSilent(email) || await userRepo.create(email)
@@ -47,15 +47,15 @@ router.post('/auth',
     minRole: joi.any().valid(_.values(konst.roleUser)).optional(),
   }),
   async function (ctx) {
-    const {email, password, minRole} = ctx.v.body
+    const { email, password, minRole } = ctx.v.body
     const user = await userRepo.getByEmailPassword(email, password)
 
     if (minRole && await userRepo.getRoleById(user.id) < minRole) {
       throw new error.GenericError('role.insufficient', null, 401)
     }
 
-    const token = jwt.sign({id: user.id}, process.env.JWT_SECRET)
-    ctx.state.r = {token}
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET)
+    ctx.state.r = { token }
   }
 )
 
@@ -64,17 +64,17 @@ router.post('/auth/token',
     token: joi.string().guid().required(),
   }),
   async function (ctx) {
-    const {token} = ctx.v.body
+    const { token } = ctx.v.body
     const userId = await passwordTokenRepo.get(token)
     await passwordTokenRepo.remove(userId)
-    const jwtToken = jwt.sign({id: userId}, process.env.JWT_SECRET)
-    ctx.state.r = {token: jwtToken}
+    const jwtToken = jwt.sign({ id: userId }, process.env.JWT_SECRET)
+    ctx.state.r = { token: jwtToken }
   }
 )
 
 router.get('/self', auth,
   async function (ctx) {
-    const {id} = ctx.state.user
+    const { id } = ctx.state.user
     ctx.state.r = await userRepo.getById(id)
   }
 )
@@ -95,8 +95,8 @@ router.put('/self/email', auth,
     password: joi.string().optional(),
   }),
   async function (ctx) {
-    const {id} = ctx.state.user
-    const {email, password} = ctx.v.body
+    const { id } = ctx.state.user
+    const { email, password } = ctx.v.body
     await userRepo.checkPassword(id, password)
     ctx.state.r = await userRepo.updateEmail(id, email)
   }
@@ -108,8 +108,8 @@ router.put('/self/password', auth,
     newPassword: joi.string().min(8).required(),
   }),
   async function (ctx) {
-    const {id} = ctx.state.user
-    const {oldPassword, newPassword} = ctx.v.body
+    const { id } = ctx.state.user
+    const { oldPassword, newPassword } = ctx.v.body
     await userRepo.checkPassword(id, oldPassword)
     await userRepo.updatePassword(id, newPassword)
     ctx.state.r = {}
@@ -118,7 +118,7 @@ router.put('/self/password', auth,
 
 router.get('/self/role', auth,
   async function (ctx) {
-    const {id} = ctx.state.user
+    const { id } = ctx.state.user
     const user = await userRepo.getRoleById(id)
     ctx.state.r = {
       user,
@@ -132,7 +132,7 @@ router.get('/user/:id', auth, roleUser.gte(konst.roleUser.admin),
     id: joi.number().integer().positive().required(),
   }),
   async function (ctx) {
-    const {id} = ctx.v.param
+    const { id } = ctx.v.param
     ctx.state.r = await userRepo.getById(id)
   }
 )
@@ -142,7 +142,7 @@ router.get('/user/email/:email', auth, roleUser.gte(konst.roleUser.admin),
     email: joi.string().email().required(),
   }),
   async function (ctx) {
-    const {email} = ctx.v.param
+    const { email } = ctx.v.param
     ctx.state.r = await userRepo.getByEmail(email)
   }
 )
@@ -156,8 +156,8 @@ router.put('/user/:id/role', auth, roleUser.gte(konst.roleUser.admin),
   }),
   roleUser.gte('v.body.role'),
   async function (ctx) {
-    const {id} = ctx.v.param
-    const {role} = ctx.v.body
+    const { id } = ctx.v.param
+    const { role } = ctx.v.body
     await userRepo.setRoleById(id, role)
     ctx.state.r = {}
   }
@@ -169,7 +169,7 @@ router.post('/recoverPassword',
   }),
   async function (ctx) {
     // TODO throttle
-    const {email} = ctx.v.body
+    const { email } = ctx.v.body
     const token = await passwordTokenRepo.createByEmail(email)
     await mailer.forgotPassword(email, token)
     ctx.state.r = {}
@@ -182,7 +182,7 @@ router.post('/changePassword',
     token: joi.string().guid().required(),
   }),
   async function (ctx) {
-    const {password, token} = ctx.v.body
+    const { password, token } = ctx.v.body
     const id = await passwordTokenRepo.get(token)
     await userRepo.updatePassword(id, password)
     await passwordTokenRepo.remove(id)

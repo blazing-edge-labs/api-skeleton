@@ -10,7 +10,7 @@ test.api('signin new', async function (t, request) {
 
   let mailToken
 
-  const {passwordlessLink} = mailer
+  const { passwordlessLink } = mailer
   mailer.passwordlessLink = (token, email, originInfo) => {
     t.is(email, 'signin.new@example.com')
     mailToken = token
@@ -41,7 +41,7 @@ test.api('signin existing', async function (t, request) {
 
   let mailToken
 
-  const {passwordlessLink} = mailer
+  const { passwordlessLink } = mailer
   mailer.passwordlessLink = (token, email, originInfo) => {
     t.is(email, 'user1@example.com')
     mailToken = token
@@ -69,7 +69,7 @@ test.api('signin not existing', async function (t, request) {
   mailer.stub.enable()
   t.plan(2)
 
-  const {passwordlessLink} = mailer
+  const { passwordlessLink } = mailer
   mailer.passwordlessLink = (token, email, originInfo) => {
     t.fail('passwordlessLink called')
     return passwordlessLink(token, email, originInfo)
@@ -91,7 +91,7 @@ test.api('signin superadmin', async function (t, request) {
 
   let mailToken
 
-  const {passwordlessLink} = mailer
+  const { passwordlessLink } = mailer
   mailer.passwordlessLink = (token, email, originInfo) => {
     t.is(email, 'superadmin@example.com')
     mailToken = token
@@ -120,7 +120,7 @@ test.api('signin with insufficient role', async function (t, request) {
   mailer.stub.enable()
   t.plan(2)
 
-  const {passwordlessLink} = mailer
+  const { passwordlessLink } = mailer
   mailer.passwordlessLink = (token, email, originInfo) => {
     t.fail('passwordlessLink called')
     return passwordlessLink(token, email, originInfo)

@@ -1,11 +1,11 @@
 const _ = require('lodash')
 const assert = require('assert')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 
 const konst = require('konst')
 const error = require('error')
-const {db, helper} = require('db')
-const {mapper} = require('repo/base')
+const { db, helper } = require('db')
+const { mapper } = require('repo/base')
 
 const map = mapper({
   id: 'id',
@@ -16,7 +16,7 @@ const map = mapper({
 
 const columnSet = new helper.ColumnSet([
   'email',
-], {table: 'user'})
+], { table: 'user' })
 
 async function hashPassword (password) {
   return bcrypt.hash(password, _.toInteger(process.env.BCRYPT_ROUNDS))
@@ -53,7 +53,7 @@ async function create (email, password) {
       email,
       password: password ? await hashPassword(password) : null,
     })
-    .catch({constraint: 'user_email_key'}, error('user.duplicate'))
+    .catch({ constraint: 'user_email_key' }, error('user.duplicate'))
 
     await t.none(`
       INSERT INTO
@@ -85,7 +85,7 @@ async function updateEmail (id, email) {
     WHERE id = $1
     RETURNING *
   `, [id, email])
-  .catch({constraint: 'user_email_key'}, error('user.duplicate'))
+  .catch({ constraint: 'user_email_key' }, error('user.duplicate'))
   .catch(error.db('db.write'))
   .then(map)
 }
@@ -151,7 +151,7 @@ async function getRoleById (id) {
     SELECT role
     FROM user_role
     WHERE user_id = $[id]
-  `, {id})
+  `, { id })
   .catchReturn(error.QueryResultError, konst.roleUser.none)
   .catch(error.db('db.read'))
   .get('role')
@@ -162,8 +162,8 @@ async function setRoleById (id, role) {
     UPDATE user_role
     SET role = $[role]
     WHERE user_id = $[id]
-  `, {id, role})
-  .catch({constraint: 'user_role_user_id_fkey'}, error.db('user.not_found'))
+  `, { id, role })
+  .catch({ constraint: 'user_role_user_id_fkey' }, error.db('user.not_found'))
   .catch(error.db('db.write'))
 }
 

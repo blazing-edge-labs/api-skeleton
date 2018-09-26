@@ -4,7 +4,7 @@ const argv = require('minimist')(process.argv.slice(2), {
 })
 const migratio = require('migratio')
 
-const {db, sql, pgp} = require('db')
+const { db, sql, pgp } = require('db')
 
 const command = argv._[0]
 const opts = {
