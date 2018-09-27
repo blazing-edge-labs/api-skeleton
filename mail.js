@@ -15,6 +15,10 @@ if (_.get(conn, 'params.base64', false)) {
   conn.user = base64decode(conn.user)
 }
 
+const host = _.first(conn.hosts)
+conn.hostname = host.name
+conn.port = host.port
+
 const transport = mailer.createTransport({
   host: conn.hostname,
   port: conn.port,
