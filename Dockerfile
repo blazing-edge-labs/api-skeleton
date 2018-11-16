@@ -1,4 +1,4 @@
-FROM node:8
+FROM node:10
 
 EXPOSE 80
 ENV \
@@ -7,9 +7,7 @@ ENV \
 
 WORKDIR /node
 COPY . /node
-RUN \
-  yarn install && \
-  yarn run build
+RUN yarn install
 
 CMD yarn run start
 
