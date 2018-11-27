@@ -13,8 +13,13 @@ const opts = {
   verbose: true,
 }
 
+function end () {
+  process.exit(0)
+}
+
 function finalize () {
   pgp.end()
+  end()
 }
 
 function fail (err) {
@@ -27,11 +32,11 @@ if (argv.r) {
 }
 
 if (command === 'up') {
-  migratio.up(opts).catch(fail)
+  migratio.up(opts).then(end).catch(fail)
 } else if (command === 'down') {
-  migratio.down(opts).catch(fail)
+  migratio.down(opts).then(end).catch(fail)
 } else if (command === 'current') {
-  migratio.current(opts).catch(fail)
+  migratio.current(opts).then(end).catch(fail)
 } else if (command === 'recreate') {
   db.query(sql('schema')).finally(finalize).catch(fail)
 } else if (command === 'seed') {
