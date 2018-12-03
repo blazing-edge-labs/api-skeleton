@@ -14,12 +14,12 @@ const opts = {
 }
 
 function end () {
+  finalize()
   process.exit(0)
 }
 
 function finalize () {
   pgp.end()
-  end()
 }
 
 function fail (err) {
@@ -32,17 +32,17 @@ if (argv.r) {
 }
 
 if (command === 'up') {
-  migratio.up(opts).then(end).catch(fail)
+  migratio.up(opts).then(end, fail)
 } else if (command === 'down') {
-  migratio.down(opts).then(end).catch(fail)
+  migratio.down(opts).then(end, fail)
 } else if (command === 'current') {
-  migratio.current(opts).then(end).catch(fail)
+  migratio.current(opts).then(end, fail)
 } else if (command === 'recreate') {
-  db.query(sql('schema')).finally(finalize).catch(fail)
+  db.query(sql('schema')).finally(finalize).then(end, fail)
 } else if (command === 'seed') {
   db.tx(function (t) {
     return t.query(sql('seed'))
-  }).finally(finalize).catch(fail)
+  }).finally(finalize).then(end, fail)
 } else {
   fail('invalid migration command')
 }
