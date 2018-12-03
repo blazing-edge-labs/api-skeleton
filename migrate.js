@@ -14,7 +14,6 @@ const opts = {
 }
 
 function end () {
-  finalize()
   process.exit(0)
 }
 
@@ -31,18 +30,21 @@ if (argv.r) {
   opts.revision = argv.r
 }
 
-if (command === 'up') {
-  migratio.up(opts).then(end, fail)
-} else if (command === 'down') {
-  migratio.down(opts).then(end, fail)
-} else if (command === 'current') {
-  migratio.current(opts).then(end, fail)
-} else if (command === 'recreate') {
-  db.query(sql('schema')).finally(finalize).then(end, fail)
-} else if (command === 'seed') {
-  db.tx(function (t) {
-    return t.query(sql('seed'))
-  }).finally(finalize).then(end, fail)
-} else {
-  fail('invalid migration command')
-}
+(function () {
+  switch (command) {
+    case 'up':
+      return migratio.up(opts).finally(finalize).then(end, fail)
+    case 'down':
+      return migratio.down(opts).finally(finalize).then(end, fail)
+    case 'current':
+      return migratio.current(opts).finally(finalize).then(end, fail)
+    case 'recreate':
+      return db.query(sql('schema')).finally(finalize).then(end, fail)
+    case 'seed':
+      return db.tx(function (t) {
+        return t.query(sql('seed'))
+      }).finally(finalize).then(end, fail)
+    default:
+      throw new Error(`"${command}" is not a valid migration command`)
+  }
+})()
