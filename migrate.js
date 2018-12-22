@@ -7,37 +7,36 @@ const migratio = require('migratio')
 const { db, sql, pgp } = require('db')
 
 const command = argv._[0]
-const opts = {
-  directory: 'migration',
-  tableName: 'migration',
-  verbose: true,
+
+async function run () {
+  switch (command) {
+    case 'up':
+    case 'down':
+    case 'current':
+      return migratio[command]({
+        directory: 'migration',
+        tableName: 'migration',
+        verbose: true,
+        revision: argv.r,
+      })
+    case 'recreate':
+      return db.query(sql('schema'))
+    case 'seed':
+      return db.tx(t => {
+        return t.query(sql('seed'))
+      })
+    default:
+      throw new Error(`"${command}" is not a valid migration command`)
+  }
 }
 
-function finalize () {
+run()
+.then(() => {
   pgp.end()
-}
-
-function fail (err) {
-  console.error(err)
-  process.exit(1)
-}
-
-if (argv.r) {
-  opts.revision = argv.r
-}
-
-if (command === 'up') {
-  migratio.up(opts).catch(fail)
-} else if (command === 'down') {
-  migratio.down(opts).catch(fail)
-} else if (command === 'current') {
-  migratio.current(opts).catch(fail)
-} else if (command === 'recreate') {
-  db.query(sql('schema')).finally(finalize).catch(fail)
-} else if (command === 'seed') {
-  db.tx(function (t) {
-    return t.query(sql('seed'))
-  }).finally(finalize).catch(fail)
-} else {
-  fail('invalid migration command')
-}
+  return process.exit(0)
+})
+.catch(e => {
+  console.error(e)
+  pgp.end()
+  return process.exit(1)
+})
