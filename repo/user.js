@@ -1,5 +1,3 @@
-const _ = require('lodash')
-const assert = require('assert')
 const bcrypt = require('bcryptjs')
 
 const konst = require('konst')
@@ -19,15 +17,13 @@ const columnSet = new helper.ColumnSet([
 ], { table: 'user' })
 
 async function hashPassword (password) {
-  return bcrypt.hash(password, _.toInteger(process.env.BCRYPT_ROUNDS))
-  .catch(error.db('user.password_invalid'))
+  return bcrypt.hash(password, Number(process.env.BCRYPT_ROUNDS))
 }
 
 async function checkPasswordWithHash (password, hash) {
-  password = password || 'null'
-  hash = hash || 'null'
-  return bcrypt.compare(password, hash).then(assert)
-  .catch(error.AssertionError, error('user.password_wrong'))
+  if (!password || !hash || !await bcrypt.compare(password, hash)) {
+    throw error('user.password_wrong')
+  }
 }
 
 async function checkPassword (id, password) {
@@ -36,8 +32,9 @@ async function checkPassword (id, password) {
     FROM "user"
     WHERE id = $1
   `, [id])
-  .catch(error.QueryResultError, error('user.not_found'))
-  .catch(error.db('db.read'))
+  .catch(error.db({
+    noData: 'user.not_found',
+  }))
   if (!password && !r.password) return
   await checkPasswordWithHash(password, r.password)
 }
@@ -53,7 +50,9 @@ async function create (email, password) {
       email,
       password: password ? await hashPassword(password) : null,
     })
-    .catch({ constraint: 'user_email_key' }, error('user.duplicate'))
+    .catch(error.db({
+      user_email_key: 'user.duplicate',
+    }))
 
     await t.none(`
       INSERT INTO
@@ -66,7 +65,7 @@ async function create (email, password) {
 
     return user
   })
-  .catch(error.db('db.write'))
+  .catch(error.db)
 }
 
 async function updatePassword (id, password) {
@@ -75,7 +74,7 @@ async function updatePassword (id, password) {
     SET password = $2
     WHERE id = $1
   `, [id, await hashPassword(password)])
-  .catch(error.db('db.update'))
+  .catch(error.db)
 }
 
 async function updateEmail (id, email) {
@@ -85,8 +84,9 @@ async function updateEmail (id, email) {
     WHERE id = $1
     RETURNING *
   `, [id, email])
-  .catch({ constraint: 'user_email_key' }, error('user.duplicate'))
-  .catch(error.db('db.write'))
+  .catch(error.db({
+    user_email_key: 'user.duplicate',
+  }))
   .then(map)
 }
 
@@ -96,21 +96,21 @@ async function getById (id) {
     FROM "user"
     WHERE id = $1
   `, [id])
+  .catch(error.db({ noData: 'user.not_found' }))
   .then(map)
-  .catch(error.QueryResultError, error('user.not_found'))
-  .catch(error.db('db.read'))
 }
 
 async function getByIdPassword (id, password) {
-  const user = await db.one(`
+  const rawUser = await db.one(`
     SELECT *
     FROM "user"
     WHERE id = $1
   `, [id])
-  .catch(error.QueryResultError, error('user.not_found'))
-  .catch(error.db('db.read'))
-  await checkPasswordWithHash(password, user.password)
-  return map(user)
+  .catch(error.db({
+    noData: 'user.not_found',
+  }))
+  await checkPasswordWithHash(password, rawUser.password)
+  return map(rawUser)
 }
 
 async function getByEmail (email) {
@@ -119,8 +119,7 @@ async function getByEmail (email) {
     FROM "user"
     WHERE email = $1
   `, [email])
-  .catch(error.QueryResultError, error('user.not_found'))
-  .catch(error.db('db.read'))
+  .catch(error.db({ noData: 'user.not_found' }))
   .then(map)
 }
 
@@ -130,41 +129,44 @@ async function getByEmailSilent (email) {
     FROM "user"
     WHERE email = $1
   `, [email])
-  .catch(error.db('db.read'))
+  .catch(error.db)
   .then((r) => r ? map(r) : null)
 }
 
 async function getByEmailPassword (email, password) {
-  const user = await db.one(`
+  const rawUser = await db.one(`
     SELECT *
     FROM "user"
     WHERE email = $1
   `, [email])
-  .catch(error.QueryResultError, error('user.password_wrong'))
-  .catch(error.db('db.read'))
-  await checkPasswordWithHash(password, user.password)
-  return map(user)
+  .catch(error.db({
+    noData: 'user.not_found',
+  }))
+  await checkPasswordWithHash(password, rawUser.password)
+  return map(rawUser)
 }
 
 async function getRoleById (id) {
-  return db.one(`
+  const r = await db.oneOrNone(`
     SELECT role
     FROM user_role
     WHERE user_id = $[id]
   `, { id })
-  .catchReturn(error.QueryResultError, konst.roleUser.none)
-  .catch(error.db('db.read'))
-  .get('role')
+  .catch(error.db)
+
+  return r ? r.role : konst.roleUser.none
 }
 
 async function setRoleById (id, role) {
-  return db.none(`
+  await db.one(`
     UPDATE user_role
     SET role = $[role]
     WHERE user_id = $[id]
+    RETURNING *
   `, { id, role })
-  .catch({ constraint: 'user_role_user_id_fkey' }, error.db('user.not_found'))
-  .catch(error.db('db.write'))
+  .catch(error.db({
+    noData: 'user.not_found',
+  }))
 }
 
 module.exports = {

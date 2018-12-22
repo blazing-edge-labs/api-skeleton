@@ -2,24 +2,16 @@ const _ = require('lodash')
 
 const error = require('error')
 
+const httpCodeByStatus = _.invert(error.errors.http)
+
 function wrap (err) {
   if (err instanceof error.GenericError) {
     return err
   }
 
-  if (err.status === 400) {
-    return error.http('http.bad_request', 400)(err, true)
-  }
+  const httpCode = (err.status && httpCodeByStatus[err.status]) || 'internal'
 
-  if (err.status === 401) {
-    return error.http('http.unauthorized', 401)(err, true)
-  }
-
-  if (err.status === 404) {
-    return error.http('http.not_found', 404)(err, true)
-  }
-
-  return error.http('http.internal')(err, true)
+  return error(`http.${httpCode}`, err)
 }
 
 function status (err) {
@@ -29,7 +21,7 @@ function status (err) {
 function format (err) {
   if (err instanceof error.ValidationError) {
     return {
-      status: false,
+      // status: false,
       code: err.code,
       error: err.error,
       errorv: {

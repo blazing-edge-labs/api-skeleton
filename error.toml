@@ -9,6 +9,7 @@ connection = 1000
 read = 1000
 write = 1001
 delete = 1002
+internal = 1003
 
 [user]
 password_wrong = 2001

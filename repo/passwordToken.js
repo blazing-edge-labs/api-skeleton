@@ -10,8 +10,7 @@ async function create (userId) {
   await remove(userId)
   return db.one('INSERT INTO password_token (user_id, token) VALUES ($1, $2) RETURNING token', [userId, token])
   .get('token')
-  .catch({ constraint: 'password_token_pkey' }, error.db('db.write'))
-  .catch(error.db('db.write'))
+  .catch(error.db)
 }
 
 async function createById (userId) {
@@ -25,7 +24,7 @@ async function createByEmail (email) {
 }
 
 async function remove (userId) {
-  return db.none('DELETE FROM password_token WHERE user_id = $1', [userId])
+  return db.none('DELETE FROM password_token WHERE user_id = $1', [userId]).catch(error.db)
 }
 
 async function get (token) {
@@ -36,8 +35,8 @@ async function get (token) {
       token = $1
       AND created_at > now() - interval '$2 hour'
   `, [token, _.toInteger(process.env.PASSWORD_TOKEN_DURATION)])
+  .catch(error.db({ noData: 'user.password_token_invalid' }))
   .get('user_id')
-  .catch(error.QueryResultError, error('user.password_token_invalid'))
 }
 
 module.exports = {
