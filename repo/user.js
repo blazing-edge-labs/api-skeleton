@@ -62,10 +62,10 @@ async function create (email, password) {
       id: user.id,
       role: konst.roleUser.none,
     })
+    .catch(error.db)
 
     return user
   })
-  .catch(error.db)
 }
 
 async function updatePassword (id, password) {

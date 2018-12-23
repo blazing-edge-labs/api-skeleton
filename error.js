@@ -23,6 +23,7 @@ function assertValidDbErrorMappingKey (key) {
 
 class GenericError extends NestedError {
   constructor (ec, cause, status) {
+    assertValidErrorConst(ec)
     super(ec, cause)
     this.error = ec
     this.code = ec
@@ -35,7 +36,6 @@ class HttpError extends GenericError {}
 class ValidationError extends GenericError {}
 
 function error (ec, cause, status) {
-  if (!inProduction) assertValidErrorConst(ec)
   if (ec.startsWith('http.')) return new HttpError(ec, cause, status || _.get(errors, ec) || 500)
   if (ec.startsWith('db.')) return new DatabaseError(ec, cause, status || 500)
   if (ec.endsWith('.not_found')) return new GenericError(ec, cause, status || 404)
