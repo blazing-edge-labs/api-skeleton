@@ -48,7 +48,8 @@ error.db = (mapping = {}) => {
   }
 
   if (!inProduction) {
-    _.keys(mapping).filter(_.isString).forEach(assertValidDbErrorMappingKey)
+    _.keys(mapping).forEach(assertValidDbErrorMappingKey)
+    _.values(mapping).filter(_.isString).forEach(assertValidErrorConst)
   }
 
   return cause => {
