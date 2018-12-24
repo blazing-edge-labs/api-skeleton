@@ -21,7 +21,6 @@ function status (err) {
 function format (err) {
   if (err instanceof error.ValidationError) {
     return {
-      // status: false,
       code: err.code,
       error: err.error,
       errorv: {
