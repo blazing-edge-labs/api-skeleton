@@ -31,7 +31,6 @@ function format (err) {
 
   if (err instanceof error.GenericError) {
     return {
-      status: false,
       code: err.code,
       error: err.error,
       errorv: process.env.NODE_ENV === 'development' ? err.nested : null,
