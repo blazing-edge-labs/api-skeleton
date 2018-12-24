@@ -43,6 +43,9 @@ function error (ec, cause, status) {
 }
 
 error.db = (mapping = {}) => {
+  if (mapping instanceof DatabaseError) {
+    throw mapping
+  }
   if (mapping instanceof Error) {
     throw error('db.internal', mapping)
   }
@@ -53,6 +56,10 @@ error.db = (mapping = {}) => {
   }
 
   return cause => {
+    if (cause instanceof DatabaseError) {
+      throw cause
+    }
+
     const key = cause instanceof QueryResultError
       ? queryResultErrorName[cause.code]
       : cause.constraint
