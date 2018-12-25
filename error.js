@@ -7,26 +7,29 @@ const errors = require('error.toml')
 
 const inProduction = process.env.NODE_ENV === 'production'
 
-// queryResultErrorCode
-// - noData
-// - multiple
-// - notEmpty
+// queryResultErrorCode:
+//   noData: int
+//   multiple: int
+//   notEmpty: int
 const queryResultErrorName = _.invert(queryResultErrorCode)
 
-function assertValidErrorConst (ec) {
-  assert(_.get(errors, ec), `invalid error const: ${ec}`)
+function getCode (ec) {
+  const code = _.get(errors, ec)
+  if (!code) throw new TypeError(`invalid error const: ${ec}`)
+  return code
 }
 
-function assertValidDbErrorMappingKey (key) {
-  assert(key in queryResultErrorCode || key.includes('_'), `invalid db error mapping key: ${key}`)
+function checkDBErrorMappingKey (key) {
+  if (!key.includes('_') && !(key in queryResultErrorCode)) {
+    throw new TypeError(`invalid dbErrorHandler mapping key: ${key}`)
+  }
 }
 
 class GenericError extends NestedError {
   constructor (ec, cause, status) {
-    assertValidErrorConst(ec)
     super(ec, cause)
     this.error = ec
-    this.code = ec
+    this.code = getCode(ec)
     this.status = status
   }
 }
@@ -36,13 +39,23 @@ class HttpError extends GenericError {}
 class ValidationError extends GenericError {}
 
 function error (ec, cause, status) {
-  if (ec.startsWith('http.')) return new HttpError(ec, cause, status || _.get(errors, ec) || 500)
-  if (ec.startsWith('db.')) return new DatabaseError(ec, cause, status || 500)
-  if (ec.endsWith('.not_found')) return new GenericError(ec, cause, status || 404)
+  if (ec.startsWith('db.')) {
+    return new DatabaseError(ec, cause, status || 500)
+  }
+
+  if (!status) {
+    const ecParts = ec.split('.')
+    status = errors.http[_.last(ecParts)]
+  }
+
+  if (ec.startsWith('http.')) {
+    return new HttpError(ec, cause, status)
+  }
+
   return new GenericError(ec, cause, status || 400)
 }
 
-error.db = (mapping = {}) => {
+function dbErrorHandler (mapping = {}) {
   if (mapping instanceof DatabaseError) {
     throw mapping
   }
@@ -51,8 +64,8 @@ error.db = (mapping = {}) => {
   }
 
   if (!inProduction) {
-    _.keys(mapping).forEach(assertValidDbErrorMappingKey)
-    _.values(mapping).filter(_.isString).forEach(assertValidErrorConst)
+    _.keys(mapping).forEach(checkDBErrorMappingKey)
+    _.values(mapping).filter(_.isString).forEach(getCode)
   }
 
   return cause => {
@@ -74,6 +87,7 @@ error.db = (mapping = {}) => {
   }
 }
 
+error.db = dbErrorHandler
 error.errors = errors
 
 error.AssertionError = assert.AssertionError
