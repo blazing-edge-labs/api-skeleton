@@ -2,6 +2,7 @@
 bad_request = 400
 unauthorized = 401
 not_found = 404
+duplicate = 409
 internal = 500
 
 [db]
@@ -9,6 +10,7 @@ connection = 1000
 read = 1000
 write = 1001
 delete = 1002
+internal = 1003
 
 [user]
 password_wrong = 2001

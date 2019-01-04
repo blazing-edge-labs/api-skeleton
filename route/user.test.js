@@ -78,7 +78,7 @@ test.api('signin not existing', async function (t, request) {
   const r = await request.post('/signin').send({
     email: 'not.existent@example.com',
   })
-  t.is(r.status, 400, 'fail')
+  t.is(r.status, 404, 'not found')
   t.ok(r.body.error, 'with error')
 
   mailer.passwordlessLink = passwordlessLink
@@ -283,7 +283,7 @@ test.api('password token nonexistant', async function (t, request) {
   const r = await request.post('/recoverPassword').send({
     email: 'nonexistant@example.com',
   })
-  t.is(r.status, 400, 'bad request')
+  t.is(r.status, 404, 'bad request')
   t.is(r.body.error, 'user.not_found', 'error code')
 })
 

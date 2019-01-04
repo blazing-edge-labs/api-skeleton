@@ -29,8 +29,7 @@ const getAll = (resource) => {
       ORDER BY $2^ $3^
       LIMIT $4 OFFSET $5
   `, [resource, ...sort, perPage, ((page - 1) * perPage)])
-    .catch(error.QueryResultError, error(`${resource}.not_found`))
-    .catch(error.db('db.read'))
+    .catch(error.db({ noData: `${resource}.not_found` }))
     .map(map)
   }
 }
@@ -39,19 +38,18 @@ const getMany = (resource) => {
   const { map } = resourceMaps[resource]
   return async (ids) => {
     return db.any(`
-      SELECT * FROM $1~ 
+      SELECT * FROM $1~
       WHERE id IN ($2:csv)
     `, [resource, ids])
+    .catch(error.db({ noData: `${resource}.not_found` }))
     .map(map)
-    .catch(error.QueryResultError, error(`${resource}.not_found`))
-    .catch(error.db('db.read'))
   }
 }
 
 const getAllCount = (resource) => {
   return async () => {
     return db.any('SELECT count(*) AS total FROM $1~', resource)
-    .catch(error.db('db.read'))
+    .catch(error.db)
   }
 }
 
@@ -62,16 +60,16 @@ const getById = (resource) => {
       SELECT *
       FROM $1~
       WHERE id = $2
-  `, [resource, id])
+    `, [resource, id])
+    .catch(error.db({ noData: `${resource}.not_found` }))
     .then(map)
-    .catch(error.QueryResultError, error(`${resource}.not_found`))
-    .catch(error.db('db.read'))
   }
 }
 
 const remove = (resource) => {
   return async (id) => {
     return db.none('DELETE FROM $1~ WHERE id = $2', [resource, id])
+    .catch(error.db)
   }
 }
 
@@ -79,7 +77,7 @@ const create = (resource) => {
   const { columnSet } = resourceMaps[resource]
   return async (data) => {
     return db.one(helper.insert(data, columnSet) + ' RETURNING id')
-    .catch(error.db('db.write'))
+    .catch(error.db)
   }
 }
 
@@ -87,6 +85,7 @@ const update = (resource) => {
   const { columnSet } = resourceMaps[resource]
   return async (id, data) => {
     return db.one(helper.update(data, columnSet) + ' WHERE id = $1 RETURNING id', id)
+    .catch(error.db)
   }
 }
 
