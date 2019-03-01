@@ -1,17 +1,31 @@
 const _ = require('lodash')
 
 function mapper (mapping) {
-  return function (item) {
-    return _.transform(mapping, function (r, v, k) {
-      if (_.isFunction(v)) {
-        r[k] = v(item)
-      } else if (_.isString(v)) {
-        r[k] = item[v]
-      } else {
-        // omit
+  const entries = Object.entries(mapping).map(([name, fx]) => [name, fx, _.isFunction(fx)])
+
+  function mapItem (item) {
+    const res = {}
+
+    // optimized for performance (this code is potentially run on large datasets)
+    for (const [ name, fx, isFun ] of entries) {
+      const value = isFun ? fx(item) : item[fx]
+
+      // ignore undefined values, useful if used to prepare data for DB
+      if (value !== void 0) {
+        res[name] = value
       }
-    })
+    }
+
+    return res
   }
+
+  const map = data => {
+    if (!data) return null
+    return _.isArray(data) ? data.map(mapItem) : mapItem(data)
+  }
+
+  map.mapping = { ...mapping }
+  return map
 }
 
 module.exports = {

@@ -130,7 +130,7 @@ async function getByEmailSilent (email) {
     WHERE email = $1
   `, [email])
   .catch(error.db)
-  .then((r) => r ? map(r) : null)
+  .then(map)
 }
 
 async function getByEmailPassword (email, password) {
