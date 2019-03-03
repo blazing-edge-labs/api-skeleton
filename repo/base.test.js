@@ -1,8 +1,6 @@
-// const _ = require('lodash')
-
 const test = require('test')
 const { db, helper } = require('db')
-const { mapper: _mapper, createResolver } = require('repo/base')
+const { mapper, createResolver } = require('repo/base')
 
 function callCounter (fun) {
   const f = function () {
@@ -13,13 +11,7 @@ function callCounter (fun) {
   return f
 }
 
-const mapper = (...args) => {
-  const map = _mapper(...args)
-  map.loading = callCounter(map.loading)
-  return map
-}
-
-test('map.loading', async t => {
+test.only('map.loading', async t => {
   // A -> (B+, C+ -> B)
 
   await db.query(`
@@ -73,17 +65,18 @@ test('map.loading', async t => {
 
   t.ok(true, 'initiated repo')
 
+  const dbSpy = { ...db }
+  dbSpy.any = callCounter(db.any)
+
   const r = await db.any('SELECT * FROM "test_A"')
   .then(mapA.loading({
     b: {},
     c: {
       b: {},
     },
-  }))
+  }, { t: dbSpy }))
 
-  t.is(mapA.loading.callCount, 1)
-  t.is(mapB.loading.callCount, 0)
-  t.is(mapC.loading.callCount, 1)
+  t.is(dbSpy.any.callCount, 3)
 
   t.deepEqual(r, [
     {
@@ -139,13 +132,13 @@ test('map.loading', async t => {
     const columnSet = new helper.ColumnSet(['label'])
     await db.query(helper.insert(data, columnSet, 'test_A'))
 
-    mapC.loading.callCount = 0
+    dbSpy.any.callCount = 0
 
     const a = await db.any('SELECT * FROM "test_A"')
-    .then(mapA.loading({ c: { b: {} } }))
+    .then(mapA.loading({ c: { b: {} } }, { t: dbSpy }))
 
     t.is(a.length, 400)
-    t.is(mapC.loading.callCount, 2, 'auto chunk')
+    t.is(dbSpy.any.callCount, 3, 'auto chunk')
     t.is(a.map(r => r.c.length).filter(Boolean).length, 2)
     t.notOk(a[0].b, 'a.b not loaded')
   }

@@ -43,7 +43,7 @@ function mapper (mapping) {
     await Promise.all(extras.map(extra => {
       const [name, [keyCol, resolver]] = extra
       if (includes[name]) {
-        return autoChunk(CHUNK_SIZE, resolver(opts, includes[name]), getColumn(keyCol))
+        return resolver(getColumn(keyCol), opts, includes[name])
         .then(values => values.forEach((val, i) => {
           mapped[i][name] = val
         }))
@@ -61,33 +61,30 @@ function createResolver (table, keyColumn, { map = _.identity, multi = false, co
   const leftPart = format('SELECT * FROM $1~ WHERE $2~ IN', [table, keyColumn])
   const rightPart = condition ? `AND ${condition}` : ''
 
-  return (opts = {}, includes) => async keys => {
+  return async (keys, opts = {}, includes) => {
     if (keys.length === 0) return []
 
-    const t = opts.t || db
-    const rows = await t.any(`${leftPart} (${csv(keys)}) ${rightPart}`).catch(error.db)
-
-    const mapped = _.isEmpty(includes)
-      ? map(rows)
-      : await map.loading(includes, opts)(rows)
+    const rows = await autoChunk(CHUNK_SIZE, keys, chunk => {
+      return (opts.t || db).any(`${leftPart} (${csv(chunk)}) ${rightPart}`).catch(error.db)
+    })
 
     const rowKeys = rows.map(row => row[keyColumn])
+
+    const mapped = !includes
+      ? map(rows)
+      : await map.loading(includes, opts)(rows)
 
     return keys.map(byZipped(rowKeys, mapped, multi))
   }
 }
 
-async function autoChunk (chunkSize, resolve, keys) {
-  if (keys.length <= chunkSize) {
-    return resolve(keys)
+function autoChunk (chunkSize, data, func) {
+  if (data.length <= chunkSize) {
+    return func(data)
   }
 
-  const uniqueKeys = [...new Set(keys)]
-
-  const keyChunks = _.chunk(uniqueKeys, chunkSize)
-  const valChunks = await Promise.all(keyChunks.map(resolve))
-
-  return keys.map(byZipped(uniqueKeys, _.flatten(valChunks)))
+  const chunks = _.chunk(_.uniq(data), chunkSize)
+  return Promise.all(chunks.map(func)).then(_.flatten)
 }
 
 function byZipped (keys, values, multi = false) {
