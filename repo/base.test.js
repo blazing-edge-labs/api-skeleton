@@ -11,7 +11,7 @@ function callCounter (fun) {
   return f
 }
 
-test.only('map.loading', async t => {
+test('map.loading', async t => {
   // A -> (B+, C+ -> B)
 
   await db.query(`
