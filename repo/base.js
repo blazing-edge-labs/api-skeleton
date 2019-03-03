@@ -64,13 +64,14 @@ function createResolver (table, keyColumn, { map = _.identity, multi = false, co
   return async (keys, opts = {}, includes) => {
     if (keys.length === 0) return []
 
+    // avoiding too large queries by chunking keys and making multiple smaller queries instead
     const rows = await autoChunk(CHUNK_SIZE, keys, chunk => {
       return (opts.t || db).any(`${leftPart} (${csv(chunk)}) ${rightPart}`).catch(error.db)
     })
 
     const rowKeys = rows.map(row => row[keyColumn])
 
-    const mapped = !includes
+    const mapped = _.isEmpty(includes)
       ? map(rows)
       : await map.loading(includes, opts)(rows)
 
