@@ -43,8 +43,6 @@ test('map.loading', async t => {
     ('C3', 2, 3);
   `)
 
-  t.ok(true, 'initiated tables')
-
   const mapB = mapper({
     label: 'label',
   })
@@ -62,8 +60,6 @@ test('map.loading', async t => {
     b: ['id', bOfAResolver],
     c: ['id', cOfAResolver],
   })
-
-  t.ok(true, 'initiated repo')
 
   const dbSpy = { ...db }
   dbSpy.any = callCounter(db.any)
