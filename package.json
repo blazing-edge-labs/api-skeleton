@@ -14,7 +14,6 @@
     "babel-preset-env": "^1.6.1",
     "babel-register": "^6.26.0",
     "bcryptjs": "^2.4.3",
-    "bluebird": "^3.5.2",
     "connection-string": "^1.0.1",
     "crypto-random-string": "^1.0.0",
     "dotenv-safe": "^6.1.0",

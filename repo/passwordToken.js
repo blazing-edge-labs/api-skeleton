@@ -6,11 +6,14 @@ const userRepo = require('repo/user')
 const { db } = require('db')
 
 async function create (userId) {
-  const token = randomString(32)
   await remove(userId)
-  return db.one('INSERT INTO password_token (user_id, token) VALUES ($1, $2) RETURNING token', [userId, token])
-  .get('token')
+  const { token } = await db.one(`
+    INSERT INTO password_token (user_id, token)
+    VALUES ($1, $2)
+    RETURNING token
+  `, [userId, randomString(32)])
   .catch(error.db)
+  return token
 }
 
 async function createById (userId) {
@@ -28,7 +31,7 @@ async function remove (userId) {
 }
 
 async function get (token) {
-  return db.one(`
+  const r = await db.one(`
     SELECT user_id
     FROM password_token
     WHERE
@@ -36,7 +39,7 @@ async function get (token) {
       AND created_at > now() - interval '$2 hour'
   `, [token, _.toInteger(process.env.PASSWORD_TOKEN_DURATION)])
   .catch(error.db({ noData: 'user.password_token_invalid' }))
-  .get('user_id')
+  return r.user_id
 }
 
 module.exports = {

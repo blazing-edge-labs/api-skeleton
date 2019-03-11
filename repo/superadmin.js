@@ -30,7 +30,7 @@ const getAll = (resource) => {
       LIMIT $4 OFFSET $5
   `, [resource, ...sort, perPage, ((page - 1) * perPage)])
     .catch(error.db({ noData: `${resource}.not_found` }))
-    .map(map)
+    .then(map)
   }
 }
 
@@ -42,7 +42,7 @@ const getMany = (resource) => {
       WHERE id IN ($2:csv)
     `, [resource, ids])
     .catch(error.db({ noData: `${resource}.not_found` }))
-    .map(map)
+    .then(map)
   }
 }
 
