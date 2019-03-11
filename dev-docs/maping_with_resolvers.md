@@ -2,7 +2,7 @@
 
 This document shows how to use mappers in combination with resolvers to significantly simplify complex read queries.
 
-Here a quick examples how it looks like:
+Here a quick example how it looks like:
 
 ```js
 // ---- repo/user.js ----
@@ -69,4 +69,35 @@ Possible options are:
 - **`condition`** - additional SQL condition/filter for all values.
 - **`chunkSize`** - ...
 
-...
+When simple table selection is not enough, `createResolver`, instead of a table name, can accept a function that performs the actual DB query (or other kind of retrieval.)
+
+For example, we can define a resolver to retrieve some data based on some 'key' of a 'join' table:
+
+```js
+// ---- repo/book.js
+
+const byAuthorIdResolver = createResolver(
+  (authorIds, { t = db }) => t.any(`
+    SELECT b.*
+    FROM "book" b
+    JOIN "author_book_rel" r ON r.book_id = b.id
+    JOIN "author" a ON r.author_id = a.id
+    WHERE a.is IN ($1:csv)
+  `, [authorIds])
+  .catch(error.db),
+  // keyColumn still needed
+  'author_id',
+  { map, multi: true }
+)
+
+
+// ---- repo/author.js ----
+
+const map = mapper({
+  firstName: 'first_name',
+  lastName: 'last_name',
+  // ...
+  books: ['id', bookRepo.byAuthorIdResolver]
+})
+
+```
