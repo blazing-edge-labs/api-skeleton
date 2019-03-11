@@ -1,11 +1,10 @@
 const _ = require('lodash')
+const assert = require('assert')
 
 const { db, pgp } = require('db')
 const error = require('error')
 
 const { format, csv } = pgp.as
-
-const CHUNK_SIZE = 250
 
 function mapper (mapping) {
   const [ extras, nonExtras ] = _.partition(Object.entries(mapping), pair => _.isArray(pair[1]))
@@ -57,17 +56,23 @@ function mapper (mapping) {
   return map
 }
 
-function createResolver (table, keyColumn, { map = _.identity, multi = false, condition = '' } = {}) {
-  const leftPart = format('SELECT * FROM $1~ WHERE $2~ IN', [table, keyColumn])
-  const rightPart = condition ? `AND ${condition}` : ''
+function createResolver (getter, keyColumn, { map = _.identity, multi = false, chunkSize = 250, condition = '' } = {}) {
+  // getter as table name
+  if (_.isString(getter)) {
+    const leftPart = format('SELECT * FROM $1~ WHERE $2~ IN', [getter, keyColumn])
+    const rightPart = condition ? `AND ${condition}` : ''
+    getter = (keys, { t = db }) => t.any(`${leftPart} (${csv(keys)}) ${rightPart}`).catch(error.db)
+  } else {
+    assert(!condition, '"condition" option valid only with createResolver(tableName, ...)')
+  }
 
-  return async (keys, opts = {}, includes) => {
+  return async (keys, opts, includes = {}) => {
     if (keys.length === 0) return []
 
+    opts = { ...opts, ...includes._ }
+
     // avoiding too large queries by chunking keys and making multiple smaller queries instead
-    const rows = await autoChunk(CHUNK_SIZE, keys, chunk => {
-      return (opts.t || db).any(`${leftPart} (${csv(chunk)}) ${rightPart}`).catch(error.db)
-    })
+    const rows = await autoChunk(chunkSize, keys, chunk => getter(chunk, opts))
 
     const rowKeys = rows.map(row => row[keyColumn])
 
