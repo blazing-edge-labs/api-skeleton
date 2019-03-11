@@ -74,13 +74,15 @@ function createResolver (getter, keyColumn, { map = _.identity, multi = false, c
     // avoiding too large queries by chunking keys and making multiple smaller queries instead
     const rows = await autoChunk(chunkSize, keys, chunk => getter(chunk, opts))
 
-    const rowKeys = rows.map(row => row[keyColumn])
-
     const mapped = _.isEmpty(includes)
       ? map(rows)
       : await map.loading(includes, opts)(rows)
 
-    return keys.map(byZipped(rowKeys, mapped, multi))
+    const keyed = createMap(multi)
+    mapped.forEach((val, i) => {
+      keyed.set(rows[i][keyColumn], val)
+    })
+    return keys.map(keyed.get)
   }
 }
 
@@ -93,24 +95,18 @@ function autoChunk (chunkSize, data, func) {
   return Promise.all(chunks.map(func)).then(_.flatten)
 }
 
-function byZipped (keys, values, multi = false) {
+function createMap (multi = false) {
   const map = new Map()
 
-  if (multi) {
-    const getArray = key => map.get(key) || map.set(key, []).get(key)
+  const get = multi
+    ? key => map.get(key) || map.set(key, []).get(key)
+    : key => map.get(key)
 
-    keys.forEach((key, i) => {
-      getArray(key).push(values[i])
-    })
+  const set = multi
+    ? (key, val) => get(key).push(val)
+    : (key, val) => map.set(key, val)
 
-    return getArray
-  }
-
-  keys.forEach((key, i) => {
-    map.set(key, values[i])
-  })
-
-  return key => map.get(key)
+  return { get, set }
 }
 
 module.exports = {
