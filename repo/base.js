@@ -61,7 +61,7 @@ function createResolver (getter, keyColumn, { map = _.identity, multi = false, c
   if (_.isString(getter)) {
     const leftPart = format('SELECT * FROM $1~ WHERE $2~ IN', [getter, keyColumn])
     const rightPart = condition ? `AND ${condition}` : ''
-    getter = (keys, { t = db }) => t.any(`${leftPart} (${csv(keys)}) ${rightPart}`).catch(error.db)
+    getter = (keys, { t = db, all }) => t.any(`${leftPart} (${csv(keys)}) ${all ? '' : rightPart}`).catch(error.db)
   } else {
     assert(!condition, '"condition" option valid only with createResolver(tableName, ...)')
   }
