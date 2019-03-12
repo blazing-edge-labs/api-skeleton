@@ -6,13 +6,16 @@ Here a quick example how it looks like:
 
 ```js
 // ---- repo/user.js ----
+const { mapper, createResolver } = require('repo/base')
+const contactRepo = require('repo/contact')
+const profileRepo = require('repo/profile')
 
 const map = mapper({
   id: 'id',
   fullName: 'full_name',
   lang: 'lang',
   // ...
-  contacts: ['id', contactsRepo.byUserIdResolver],
+  contacts: ['id', contactRepo.byUserIdResolver],
   profile: ['profile_id', profileRepo.byIdResolver],
 })
 
@@ -28,7 +31,8 @@ async function getAllUsers (includeProfiles = false) {
 }
 
 
-// ---- repo/contacts.js ----
+// ---- repo/contact.js ----
+const { mapper, createResolver } = require('repo/base')
 
 const map = mapper({
   // ...
@@ -41,6 +45,8 @@ const byUserIdResolver = createResolver('contact', 'user_id', { map, multi: true
 
 
 // ---- repo/profile.js ----
+const { mapper, createResolver } = require('repo/base')
+const reviewRepo = require('repo/review')
 
 const map = mapper({
   // ...
