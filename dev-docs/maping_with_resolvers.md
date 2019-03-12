@@ -74,30 +74,34 @@ When simple table selection is not enough, `createResolver`, instead of a table 
 For example, we can define a resolver to retrieve some data based on some 'key' of a 'join' table:
 
 ```js
-// ---- repo/book.js
+// ---- repo/author.js
 
-const byAuthorIdResolver = createResolver(
-  (authorIds, { t = db }) => t.any(`
-    SELECT b.*
-    FROM "book" b
-    JOIN "author_book_rel" r ON r.book_id = b.id
-    JOIN "author" a ON r.author_id = a.id
-    WHERE a.is IN ($1:csv)
-  `, [authorIds])
+const map = mapper({
+  fullName: 'fullName',
+  // ...
+})
+
+const byBookIdResolver = createResolver(
+  (bookIds, { t = db }) => t.any(`
+    SELECT a.*
+    FROM "author" a
+    JOIN "author_book_rel" r ON r.author_id = a.id
+    WHERE r.book_id IN ($1:csv)
+  `, [bookIds])
   .catch(error.db),
   // keyColumn still needed
-  'author_id',
+  'book_id',
   { map, multi: true }
 )
 
 
-// ---- repo/author.js ----
+// ---- repo/book.js ----
 
 const map = mapper({
-  firstName: 'first_name',
-  lastName: 'last_name',
+  title: 'title',
+  publisherId: 'publisher_id',
   // ...
-  books: ['id', bookRepo.byAuthorIdResolver]
+  authors: ['id', authorRepo.byBookIdResolver]
 })
 
 ```
