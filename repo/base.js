@@ -80,6 +80,10 @@ function createResolver (getter, keyColumn, { map = _.identity, multi = false, c
       ? map(rows)
       : await map.loading(includes, opts)(rows)
 
+    if (keyColumn === null) {
+      return mapped
+    }
+
     const keyed = createMap(multi)
     mapped.forEach((val, i) => {
       keyed.set(rows[i][keyColumn], val)
