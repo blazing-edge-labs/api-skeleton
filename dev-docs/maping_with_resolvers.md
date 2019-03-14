@@ -70,7 +70,7 @@ resolver = createResolver(tableName, keyColumnName, options)
 ```
 
 Possible options are:
-- **`map`** - function that is going to be used to map multiple values. This is usually the `map` function of the repo file created with the `mapper` utility function. When required, `map.loading` will be used internally if it exists.
+- **`map`** - function that is going to be used to map multiple values. This is usually the `map` function of the repo file created with the `mapper` utility function. When required, `map.loading` will be used internally.
 - **`multi`** - set to `true` if multiple data per key is expected (1-n relations.)
 - **`condition`** - additional SQL condition/filter for all values.
 - **`chunkSize`** - ...
