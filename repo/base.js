@@ -43,9 +43,12 @@ function mapper (mapping) {
     const mapped = raw.map(mapItem)
     const getColumn = _.memoize(col => raw.map(r => r[col]))
 
-    await Promise.all(_.keys(includes).map(name => {
-      const [keyCol, resolver] = extras[name]
-      return resolver(getColumn(keyCol), opts, includes[name])
+    await Promise.all(_.map(includes, (inc, name) => {
+      if (!inc) return null
+
+      const [keyCol, resolver, _inc] = _.isArray(inc) ? inc : extras[name]
+
+      return resolver(getColumn(keyCol), opts, _.isArray(inc) ? _inc : inc)
       .then(values => values.forEach((val, i) => {
         mapped[i][name] = val
       }))
