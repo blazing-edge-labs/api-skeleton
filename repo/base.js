@@ -7,15 +7,19 @@ const error = require('error')
 const { format, csv } = pgp.as
 
 function mapper (mapping) {
-  const [ extras, nonExtras ] = _.partition(Object.entries(mapping), pair => _.isArray(pair[1]))
+  const mappingEntries = _(mapping)
+  .omitBy(_.isArray)
+  .entries()
+  .map(([name, fx]) => [name, fx, _.isFunction(fx)])
+  .value()
 
-  const ownMapping = nonExtras.map(([name, fx]) => [name, fx, _.isFunction(fx)])
+  const extras = _.pickBy(mapping, _.isArray)
 
   function mapItem (item) {
     const res = {}
 
     // optimized for performance (this code is potentially run on large datasets)
-    for (const [ name, fx, isFun ] of ownMapping) {
+    for (const [ name, fx, isFun ] of mappingEntries) {
       const value = isFun ? fx(item) : item[fx]
 
       // ignore undefined values
@@ -39,14 +43,12 @@ function mapper (mapping) {
     const mapped = raw.map(mapItem)
     const getColumn = _.memoize(col => raw.map(r => r[col]))
 
-    await Promise.all(extras.map(extra => {
-      const [name, [keyCol, resolver]] = extra
-      if (includes[name]) {
-        return resolver(getColumn(keyCol), opts, includes[name])
-        .then(values => values.forEach((val, i) => {
-          mapped[i][name] = val
-        }))
-      }
+    await Promise.all(_.keys(includes).map(name => {
+      const [keyCol, resolver] = extras[name]
+      return resolver(getColumn(keyCol), opts, includes[name])
+      .then(values => values.forEach((val, i) => {
+        mapped[i][name] = val
+      }))
     }))
 
     return _.isArray(data) ? mapped : mapped[0]
