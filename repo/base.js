@@ -71,12 +71,12 @@ function createResolver (getter, keyColumn, { map = _.identity, multi = false, c
     assert(!condition, '"condition" option valid only with createResolver(tableName, ...)')
   }
 
-  return async (keys, opts, includes = {}) => {
+  return async (keys, opts, { _options, ...includes } = {}) => {
     if (keys.length === 0) return []
 
     // Providing a way to define resource specific options (overriding common ones.)
     // This is subject of change, so don't relay on it too much, for now.
-    opts = { ...opts, ...includes._ }
+    opts = { ...opts, ..._options }
 
     // avoiding too large queries by chunking keys and making multiple smaller queries instead
     const rows = await autoChunk(chunkSize, keys, chunk => getter(chunk, opts))
