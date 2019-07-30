@@ -19,7 +19,7 @@ function mapper (mapping) {
     const res = {}
 
     // optimized for performance (this code is potentially run on large datasets)
-    for (const [ name, fx, isFun ] of mappingEntries) {
+    for (const [name, fx, isFun] of mappingEntries) {
       const value = isFun ? fx(item) : item[fx]
 
       // ignore undefined values

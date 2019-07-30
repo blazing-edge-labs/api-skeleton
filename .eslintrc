@@ -1,16 +1,14 @@
 {
   "extends": [
     "standard",
-    "plugin:promise/recommended"
+    "plugin:promise/recommended",
   ],
   "rules": {
     "comma-dangle": ["error", "always-multiline"],
     "indent": ["error", 2, {
-      "CallExpression": {"arguments": "off"},
       "MemberExpression": 0,
-      "SwitchCase": 1
+      "SwitchCase": 1,
     }],
     "no-else-return": "error",
-    "promise/valid-params": 0
-  }
+  },
 }

@@ -12,7 +12,7 @@ const userRepo = require('repo/user')
  * you can manually override it at the bottom of this file
  */
 const resourceMaps = {
-  'user': {
+  user: {
     map: userRepo.map,
     columnSet: userRepo.columnSet,
   },

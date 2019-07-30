@@ -81,10 +81,10 @@ router.get('/self', auth,
 
 router.put('/self', auth,
   validate.body({
-    // add
+  // add
   }),
   async function (ctx) {
-    // const {id} = ctx.state.user
+  // const {id} = ctx.state.user
     throw new Error('not implemented')
   }
 )
@@ -168,7 +168,7 @@ router.post('/recoverPassword',
     email: joi.string().email().required(),
   }),
   async function (ctx) {
-    // TODO throttle
+  // TODO throttle
     const { email } = ctx.v.body
     const token = await passwordTokenRepo.createByEmail(email)
     await mailer.forgotPassword(email, token)

@@ -6,7 +6,6 @@ const mailer = require('mail')
 
 test.api('signin new', async function (t, request) {
   mailer.stub.enable()
-  t.plan(6)
 
   let mailToken
 
@@ -37,7 +36,6 @@ test.api('signin new', async function (t, request) {
 
 test.api('signin existing', async function (t, request) {
   mailer.stub.enable()
-  t.plan(6)
 
   let mailToken
 
@@ -67,7 +65,6 @@ test.api('signin existing', async function (t, request) {
 
 test.api('signin not existing', async function (t, request) {
   mailer.stub.enable()
-  t.plan(2)
 
   const { passwordlessLink } = mailer
   mailer.passwordlessLink = (token, email, originInfo) => {
@@ -87,7 +84,6 @@ test.api('signin not existing', async function (t, request) {
 
 test.api('signin superadmin', async function (t, request) {
   mailer.stub.enable()
-  t.plan(6)
 
   let mailToken
 
@@ -118,7 +114,6 @@ test.api('signin superadmin', async function (t, request) {
 
 test.api('signin with insufficient role', async function (t, request) {
   mailer.stub.enable()
-  t.plan(2)
 
   const { passwordlessLink } = mailer
   mailer.passwordlessLink = (token, email, originInfo) => {
@@ -289,7 +284,6 @@ test.api('password token nonexistant', async function (t, request) {
 
 test.api('password recover', async function (t, request) {
   mailer.stub.enable()
-  t.plan(8)
 
   let r, token
 
