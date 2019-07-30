@@ -76,50 +76,50 @@ test('map.loading', async t => {
 
   t.deepEqual(r, [
     {
-      'label': 'A1',
-      'b': [
+      label: 'A1',
+      b: [
         {
-          'label': 'B1',
+          label: 'B1',
         },
         {
-          'label': 'B2',
+          label: 'B2',
         },
       ],
-      'c': [
+      c: [
         {
-          'label': 'C1',
-          'b': {
-            'label': 'B1',
+          label: 'C1',
+          b: {
+            label: 'B1',
           },
         },
         {
-          'label': 'C2',
-          'b': {
-            'label': 'B2',
-          },
-        },
-      ],
-    },
-    {
-      'label': 'A2',
-      'b': [
-        {
-          'label': 'B3',
-        },
-      ],
-      'c': [
-        {
-          'label': 'C3',
-          'b': {
-            'label': 'B3',
+          label: 'C2',
+          b: {
+            label: 'B2',
           },
         },
       ],
     },
     {
-      'label': 'A3',
-      'b': [],
-      'c': [],
+      label: 'A2',
+      b: [
+        {
+          label: 'B3',
+        },
+      ],
+      c: [
+        {
+          label: 'C3',
+          b: {
+            label: 'B3',
+          },
+        },
+      ],
+    },
+    {
+      label: 'A3',
+      b: [],
+      c: [],
     },
   ])
 

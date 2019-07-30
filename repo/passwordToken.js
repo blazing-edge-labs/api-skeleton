@@ -11,7 +11,7 @@ async function create (userId) {
     INSERT INTO password_token (user_id, token)
     VALUES ($1, $2)
     RETURNING token
-  `, [userId, randomString(32)])
+  `, [userId, randomString({ length: 32 })])
   .catch(error.db)
   return token
 }

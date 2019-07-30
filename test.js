@@ -67,7 +67,7 @@ async function auth (email, password) {
     }
   }
   return {
-    'Authorization': `Bearer ${cache.get(key)}`,
+    Authorization: `Bearer ${cache.get(key)}`,
   }
 }
 

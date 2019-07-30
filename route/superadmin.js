@@ -15,50 +15,50 @@ router.use(roleUser.gte(konst.roleUser.superadmin))
 
 resources.forEach(resource => {
   router.get(`/${resource}/many`,
-    validate.query({
-      ids: joi.array().items(joi.number().integer()),
-    }),
-    async function (ctx) {
-      const { ids } = ctx.v.query
-      ctx.state.r = await adminRepo[resource].getMany(ids)
-    }
+  validate.query({
+    ids: joi.array().items(joi.number().integer()),
+  }),
+  async function (ctx) {
+    const { ids } = ctx.v.query
+    ctx.state.r = await adminRepo[resource].getMany(ids)
+  }
   )
 
   router.get(`/${resource}`,
-    validate.query({
-      sort: joi.array().items(joi.string()).length(2),
-      page: joi.number(),
-      perPage: joi.number(),
-      filter: joi.object(),
-    }),
-    async function (ctx) {
-      const { query } = ctx.v
-      const count = await adminRepo[resource].getAllCount()
-      ctx.state.r = {
-        items: await adminRepo[resource].getAll(query),
-        count: count[0].total,
-      }
+  validate.query({
+    sort: joi.array().items(joi.string()).length(2),
+    page: joi.number(),
+    perPage: joi.number(),
+    filter: joi.object(),
+  }),
+  async function (ctx) {
+    const { query } = ctx.v
+    const count = await adminRepo[resource].getAllCount()
+    ctx.state.r = {
+      items: await adminRepo[resource].getAll(query),
+      count: count[0].total,
     }
+  }
   )
 
   router.get(`/${resource}/:id`,
-    validate.param({
-      id: joi.number().integer().positive().required(),
-    }),
-    async function (ctx) {
-      const { id } = ctx.v.param
-      ctx.state.r = await adminRepo[resource].getById(id)
-    }
+  validate.param({
+    id: joi.number().integer().positive().required(),
+  }),
+  async function (ctx) {
+    const { id } = ctx.v.param
+    ctx.state.r = await adminRepo[resource].getById(id)
+  }
   )
 
   router.put(`/${resource}/:id`,
-    validate.param({
-      id: joi.number().integer().positive().required(),
-    }),
-    async function (ctx) {
-      const { id } = ctx.v.param
-      ctx.state.r = await adminRepo[resource].update(id, ctx.request.body)
-    }
+  validate.param({
+    id: joi.number().integer().positive().required(),
+  }),
+  async function (ctx) {
+    const { id } = ctx.v.param
+    ctx.state.r = await adminRepo[resource].update(id, ctx.request.body)
+  }
   )
 
   router.post(`/${resource}`, async function (ctx) {
@@ -66,14 +66,14 @@ resources.forEach(resource => {
   })
 
   router.del(`/${resource}/:id`,
-    validate.param({
-      id: joi.number().integer().positive().required(),
-    }),
-    async function (ctx) {
-      const { id } = ctx.v.param
-      await adminRepo[resource].remove(id)
-      ctx.state.r = {}
-    }
+  validate.param({
+    id: joi.number().integer().positive().required(),
+  }),
+  async function (ctx) {
+    const { id } = ctx.v.param
+    await adminRepo[resource].remove(id)
+    ctx.state.r = {}
+  }
   )
 })
 

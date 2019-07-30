@@ -4,20 +4,7 @@ const konst = require('konst')
 const mailer = require('nodemailer')
 const url = require('url')
 
-function base64decode (str) {
-  return Buffer.from(str, 'base64').toString('ascii')
-}
-
 const conn = connString(process.env.MAIL_URL)
-
-if (_.get(conn, 'params.base64', false)) {
-  conn.password = base64decode(conn.password)
-  conn.user = base64decode(conn.user)
-}
-
-const host = _.first(conn.hosts)
-conn.hostname = host.name
-conn.port = host.port
 
 const transport = mailer.createTransport({
   host: conn.hostname,
@@ -26,9 +13,7 @@ const transport = mailer.createTransport({
     user: conn.user,
     pass: conn.password,
   },
-  secure: conn.protocol === 'smtps',
 })
-transport.verify().catch(console.error)
 
 const sendEmail = options => transport.sendMail(options)
 
@@ -52,10 +37,8 @@ function passwordlessLink (token, email, originInfo) {
   .mapValues(encodeURIComponent)
   .value()
 
-  const linkObject = _(url.parse(process.env.PASSWORDLESS_LOGIN_PAGE, true))
-  .omit('search')
-  .merge({ query })
-  .value()
+  const linkObject = new url.URL(process.env.PASSWORDLESS_LOGIN_PAGE)
+  linkObject.search = new url.URLSearchParams(query)
 
   return sendEmail({
     from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM_ADDRESS}>`,
