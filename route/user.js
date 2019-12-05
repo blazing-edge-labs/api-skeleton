@@ -37,7 +37,7 @@ router.post('/signin',
     const mailToken = await passwordTokenRepo.createById(user.id)
     await mailer.passwordlessLink(mailToken, email, originInfo)
     ctx.state.r = {}
-  }
+  },
 )
 
 router.post('/auth',
@@ -56,7 +56,7 @@ router.post('/auth',
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET)
     ctx.state.r = { token }
-  }
+  },
 )
 
 router.post('/auth/token',
@@ -69,14 +69,14 @@ router.post('/auth/token',
     await passwordTokenRepo.remove(userId)
     const jwtToken = jwt.sign({ id: userId }, process.env.JWT_SECRET)
     ctx.state.r = { token: jwtToken }
-  }
+  },
 )
 
 router.get('/self', auth,
   async function (ctx) {
     const { id } = ctx.state.user
     ctx.state.r = await userRepo.getById(id)
-  }
+  },
 )
 
 router.put('/self', auth,
@@ -86,7 +86,7 @@ router.put('/self', auth,
   async function (ctx) {
   // const {id} = ctx.state.user
     throw new Error('not implemented')
-  }
+  },
 )
 
 router.put('/self/email', auth,
@@ -99,7 +99,7 @@ router.put('/self/email', auth,
     const { email, password } = ctx.v.body
     await userRepo.checkPassword(id, password)
     ctx.state.r = await userRepo.updateEmail(id, email)
-  }
+  },
 )
 
 router.put('/self/password', auth,
@@ -113,7 +113,7 @@ router.put('/self/password', auth,
     await userRepo.checkPassword(id, oldPassword)
     await userRepo.updatePassword(id, newPassword)
     ctx.state.r = {}
-  }
+  },
 )
 
 router.get('/self/role', auth,
@@ -124,7 +124,7 @@ router.get('/self/role', auth,
       user,
       admin: user >= konst.roleUser.admin,
     }
-  }
+  },
 )
 
 router.get('/user/:id', auth, roleUser.gte(konst.roleUser.admin),
@@ -134,7 +134,7 @@ router.get('/user/:id', auth, roleUser.gte(konst.roleUser.admin),
   async function (ctx) {
     const { id } = ctx.v.param
     ctx.state.r = await userRepo.getById(id)
-  }
+  },
 )
 
 router.get('/user/email/:email', auth, roleUser.gte(konst.roleUser.admin),
@@ -144,7 +144,7 @@ router.get('/user/email/:email', auth, roleUser.gte(konst.roleUser.admin),
   async function (ctx) {
     const { email } = ctx.v.param
     ctx.state.r = await userRepo.getByEmail(email)
-  }
+  },
 )
 
 router.put('/user/:id/role', auth, roleUser.gte(konst.roleUser.admin),
@@ -160,7 +160,7 @@ router.put('/user/:id/role', auth, roleUser.gte(konst.roleUser.admin),
     const { role } = ctx.v.body
     await userRepo.setRoleById(id, role)
     ctx.state.r = {}
-  }
+  },
 )
 
 router.post('/recoverPassword',
@@ -173,7 +173,7 @@ router.post('/recoverPassword',
     const token = await passwordTokenRepo.createByEmail(email)
     await mailer.forgotPassword(email, token)
     ctx.state.r = {}
-  }
+  },
 )
 
 router.post('/changePassword',
@@ -187,7 +187,7 @@ router.post('/changePassword',
     await userRepo.updatePassword(id, password)
     await passwordTokenRepo.remove(id)
     ctx.state.r = {}
-  }
+  },
 )
 
 module.exports = router

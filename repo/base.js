@@ -23,7 +23,7 @@ function mapper (mapping) {
       const value = isFun ? fx(item) : item[fx]
 
       // ignore undefined values
-      if (value !== void 0) {
+      if (value !== undefined) {
         res[name] = value
       }
     }

@@ -21,7 +21,7 @@ resources.forEach(resource => {
     async function (ctx) {
       const { ids } = ctx.v.query
       ctx.state.r = await adminRepo[resource].getMany(ids)
-    }
+    },
   )
 
   router.get(`/${resource}`,
@@ -38,7 +38,7 @@ resources.forEach(resource => {
         items: await adminRepo[resource].getAll(query),
         count: count[0].total,
       }
-    }
+    },
   )
 
   router.get(`/${resource}/:id`,
@@ -48,7 +48,7 @@ resources.forEach(resource => {
     async function (ctx) {
       const { id } = ctx.v.param
       ctx.state.r = await adminRepo[resource].getById(id)
-    }
+    },
   )
 
   router.put(`/${resource}/:id`,
@@ -58,7 +58,7 @@ resources.forEach(resource => {
     async function (ctx) {
       const { id } = ctx.v.param
       ctx.state.r = await adminRepo[resource].update(id, ctx.request.body)
-    }
+    },
   )
 
   router.post(`/${resource}`, async function (ctx) {
@@ -73,7 +73,7 @@ resources.forEach(resource => {
       const { id } = ctx.v.param
       await adminRepo[resource].remove(id)
       ctx.state.r = {}
-    }
+    },
   )
 })
 
