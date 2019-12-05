@@ -1,4 +1,4 @@
-FROM node:10
+FROM node:12-slim
 
 EXPOSE 80
 ENV \
@@ -7,7 +7,7 @@ ENV \
 
 WORKDIR /node
 COPY . /node
-RUN yarn install
+RUN yarn install --frozen-lockfile
 
 CMD yarn run start
 
