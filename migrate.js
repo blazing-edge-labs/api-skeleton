@@ -1,4 +1,4 @@
-const argv = require('minimist')(process.argv.slice(2), {
+const argv = require('mri')(process.argv.slice(2), {
   boolean: true,
   stopEarly: true,
 })
