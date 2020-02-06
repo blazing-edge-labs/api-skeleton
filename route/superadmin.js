@@ -1,4 +1,4 @@
-const joi = require('joi')
+const joi = require('@hapi/joi')
 const router = new (require('koa-router'))()
 
 const adminRepo = require('repo/superadmin')

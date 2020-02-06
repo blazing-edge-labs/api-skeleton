@@ -1,4 +1,4 @@
-FROM node:12-slim
+FROM node:12
 
 EXPOSE 80
 ENV \

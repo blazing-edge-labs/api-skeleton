@@ -4,11 +4,14 @@
     "plugin:promise/recommended",
   ],
   "rules": {
+    "camelcase": "off",
     "comma-dangle": ["error", "always-multiline"],
-    "indent": ["error", 2, {
-      "MemberExpression": 0,
-      "SwitchCase": 1,
-    }],
+    "handle-callback-err": "off",
+    "indent": ["error", 2, { "MemberExpression": 0, "SwitchCase": 1 }],
     "no-else-return": "error",
+    "promise/always-return": "off",
+    "promise/catch-or-return": "off",
+    "sort-imports": "error",
+    "sort-vars": "error",
   },
 }

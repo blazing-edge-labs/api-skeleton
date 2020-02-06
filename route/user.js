@@ -1,5 +1,5 @@
 const _ = require('lodash')
-const joi = require('joi')
+const joi = require('@hapi/joi')
 const jwt = require('jsonwebtoken')
 const router = new (require('koa-router'))()
 
@@ -21,7 +21,7 @@ router.post('/signin',
     email: joi.string().email().required(),
     originInfo: joi.string().trim().allow('').max(555).optional(),
     allowNew: joi.boolean().default(false),
-    minRole: joi.any().valid(_.values(konst.roleUser)).optional(),
+    minRole: joi.any().valid(..._.values(konst.roleUser)).optional(),
   }),
   async function (ctx) {
     const { email, originInfo, allowNew, minRole } = ctx.v.body
@@ -44,7 +44,7 @@ router.post('/auth',
   validate.body({
     email: joi.string().email().required(),
     password: joi.string().required(),
-    minRole: joi.any().valid(_.values(konst.roleUser)).optional(),
+    minRole: joi.any().valid(..._.values(konst.roleUser)).optional(),
   }),
   async function (ctx) {
     const { email, password, minRole } = ctx.v.body
@@ -152,7 +152,7 @@ router.put('/user/:id/role', auth, roleUser.gte(konst.roleUser.admin),
     id: joi.number().integer().positive().required(),
   }),
   validate.body({
-    role: joi.any().valid(_.values(konst.roleUser)).required(),
+    role: joi.any().valid(..._.values(konst.roleUser)).required(),
   }),
   roleUser.gte('v.body.role'),
   async function (ctx) {
