@@ -4,16 +4,7 @@ const mailer = require('nodemailer')
 const url = require('url')
 const { ConnectionString } = require('connection-string')
 
-function base64decode (string) {
-  return Buffer.from(string, 'base64').toString('ascii')
-}
-
 const conn = new ConnectionString(process.env.MAIL_URL)
-
-if (conn.params && conn.params.base64) {
-  conn.password = base64decode(conn.password)
-  conn.user = base64decode(conn.user)
-}
 
 const transport = mailer.createTransport({
   auth: {
