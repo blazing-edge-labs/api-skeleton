@@ -7,7 +7,7 @@
  *
  * Why bother with strict mode at all?
  * In short: Safety and Performance.
- * For more info, check: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode
+ * For more info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode
  */
 
 const path = require('path')
