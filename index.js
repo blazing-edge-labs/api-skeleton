@@ -1,4 +1,4 @@
-'strict mode'
+'use strict'
 require('auto-strict')
 require('env')
 const app = require('app')
