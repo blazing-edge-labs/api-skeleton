@@ -5,6 +5,9 @@ not_found = 404
 duplicate = 409
 internal = 500
 
+[docs]
+missing_code = 100
+
 [db]
 connection = 1000
 read = 1000
@@ -24,3 +27,6 @@ password_token_invalid = 2006
 duplicate = 4000
 not_found = 4001
 insufficient = 4002
+
+[photo]
+not_found = 5001

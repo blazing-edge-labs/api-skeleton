@@ -13,7 +13,13 @@ function validator (path, target, schema, options = {}) {
   const opts = _.defaults(options, defaults)
   const schemaCompiled = joi.compile(schema)
 
-  return async function (ctx, next) {
+  return async function _validator (ctx, next) {
+    // used to populate validation middleware
+    if (!next) {
+      ctx[target] = schema
+      return
+    }
+
     const input = _.get(ctx, path)
 
     const { error: err, value: data } = schemaCompiled.validate(input, opts)
