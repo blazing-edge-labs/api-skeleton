@@ -11,8 +11,12 @@ const docsConfiguration = {
   docsRouteDir: 'route',
   /**
    * Automatic docs will add these files and combine with the extended docs
+   * If you want to use subdirs in the "route" folder then add the paths as arrays
+   * e.g. "route/user/friends"
+   *
+   * routeFilePaths: [ ['user', 'friends'] ]
    */
-  routeFileNames: [
+  routeFilePaths: [
     'index',
     'user',
   ],
@@ -20,8 +24,8 @@ const docsConfiguration = {
 
 // automatic router docs
 function requireRoutes (docsConfig) {
-  return _.map(docsConfig.routeFileNames, routeFileName => {
-    const routeFilePath = path.join(docsConfig.routeDir, routeFileName)
+  return _.map(docsConfig.routeFilePaths, routeFileName => {
+    const routeFilePath = path.join(docsConfig.routeDir, ..._.castArray(routeFileName))
     return require(routeFilePath).routes()
   })
 }

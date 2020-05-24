@@ -131,7 +131,7 @@ function generateDocsFromRoutes (routers) {
   const routes = _(routers)
   .map(({ router }) => router.stack)
   .flatten()
-  .filter(route => _.size(route.methods))
+  .filter(route => !_.isEmpty(route.methods))
   .value()
 
   const routeDocs = {}
