@@ -2,6 +2,7 @@ const _ = require('lodash')
 const joiToSwagger = require('joi-to-swagger')
 
 const errorDocsLib = require('docs/api/lib/error')
+const extendedDocs = require('docs/api/lib/extended')
 
 /**
  * Get methods for swagger routes
@@ -147,5 +148,6 @@ function generateDocsFromRoutes (routers) {
 }
 
 module.exports = {
+  ...extendedDocs,
   generateDocsFromRoutes,
 }

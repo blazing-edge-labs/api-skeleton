@@ -1,49 +1,57 @@
+const _ = require('lodash')
 const fsPromises = require('fs').promises
 const path = require('path')
 
 const docsLib = require('docs/api/lib')
 
-/**
- * update the all routers array to add new routes to swagger docs
- */
-const allRouters = [
-  require('route/index').routes(),
-  require('route/user').routes(),
-]
-
-const base = {
-  openapi: '3.0.0',
-  servers: [
-    {
-      url: 'https://localhost:3000',
-      description: 'Test server',
-    },
+const docsConfiguration = {
+  // location of the routes
+  routeDir: 'route',
+  // location of the route extended docs
+  docsRouteDir: 'route',
+  /**
+   * Automatic docs will add these files and combine with the extended docs
+   */
+  routeFileNames: [
+    'index',
+    'user',
   ],
-  info: {
-    version: process.env.npm_package_version,
-    title: 'API Skeleton',
-    description: 'This is the description',
-  },
-  paths: docsLib.generateDocsFromRoutes(allRouters),
-  components: {
-    securitySchemes: {
-      jwt: {
-        bearerFormat: 'JWT',
-        scheme: 'Bearer',
-        type: 'http',
-      },
-    },
-  },
+}
+
+// automatic router docs
+function requireRoutes (docsConfig) {
+  return _.map(docsConfig.routeFileNames, routeFileName => {
+    const routeFilePath = path.join(docsConfig.routeDir, routeFileName)
+    return require(routeFilePath).routes()
+  })
+}
+
+async function createDocsJSON (docs) {
+  return fsPromises.writeFile(
+    path.join(__dirname, 'docs.json'),
+    JSON.stringify(docs),
+  )
 }
 
 /**
  * Bundle the docs into a JSON file for consumption
  */
-async function createDocs () {
-  return fsPromises.writeFile(
-    path.join(__dirname, 'docs.json'),
-    JSON.stringify(base),
+async function createDocs (docsConfig) {
+  const base = await docsLib.fetchBaseYaml()
+  const extendedRouterDocs = await docsLib.fetchExtendedDocsForRoutes(docsConfig)
+  const automaticRouteDocs = docsLib.generateDocsFromRoutes(
+    requireRoutes(docsConfig),
+    extendedRouterDocs
   )
+
+  const docs = _.merge({}, base, {
+    info: {
+      version: process.env.npm_package_version,
+    },
+    paths: _.merge({}, automaticRouteDocs, extendedRouterDocs)
+  })
+
+  return createDocsJSON(docs)
 }
 
-createDocs().catch(console.error)
+createDocs(docsConfiguration).catch(console.error)

@@ -1,0 +1,11 @@
+openapi: 3.0.0
+info:
+  title: Api Skeleton
+  description: This is the skeleton docs description
+  # We do not need to add paths because it will be overriden by routes
+  components:
+    securitySchemes:
+      jwt:
+        bearerFormat: JWT
+        scheme: Bearer
+        type: http

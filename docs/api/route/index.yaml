@@ -1,0 +1,12 @@
+/health:
+  get:
+    responses:
+      200:
+        description: Health check 200 response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: boolean
