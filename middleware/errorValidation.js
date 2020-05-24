@@ -12,15 +12,12 @@ function errorValidation (errorConstants = []) {
     try {
       await next()
     } catch (err) {
-      if (err instanceof error.ValidationError || _.includes([401, 500], err.status)) {
+      if (!(err instanceof error.GenericError) || err.status >= 500) {
         throw err
       }
 
-      const isErrorDefinedInConstants = _.some(
-        errorConstants,
-        errorConstant => errorConstant.error === err.error,
-      )
-      if (isErrorDefinedInConstants) {
+      const {error, status} = err
+      if (_.some(errorConstants, {error, status}) {
         throw err
       }
 
