@@ -59,7 +59,8 @@
   "scripts": {
     "ci": "run-p lint test",
     "docs:build": "NODE_PATH=. node -r ./env.js ./docs/api/index.js",
-    "docs:serve": "redoc-cli bundle docs/api/docs.json",
+    "docs:bundle": "redoc-cli bundle docs/api/docs.json",
+    "docs:build:bundle": "run-s docs:build docs:bundle",
     "docs:serve:watch": "redoc-cli serve docs/api/docs.json --watch",
     "db:recreate": "run-s \"migrate recreate\"",
     "db:seed": "run-s \"migrate seed\"",
