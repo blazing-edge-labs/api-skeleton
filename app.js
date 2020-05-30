@@ -15,7 +15,7 @@ app.use(mount('/', require('route/index').routes()))
 app.use(mount('/', require('route/user').routes()))
 app.use(mount('/admin', require('route/superadmin').routes())) // Super-admin API endpoints
 
-if (process.env.SERVE_DOCS) {
+if (JSON.parse(process.env.SERVE_DOCS)) {
   app.use(mount('/docs', async function (ctx) {
     await send(ctx, 'redoc-static.html')
   }))
