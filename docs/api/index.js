@@ -24,9 +24,8 @@ const docsConfiguration = {
 
 // automatic router docs
 function requireRoutes (docsConfig) {
-  return _.map(docsConfig.routeFilePaths, routeFileName => {
-    const routeFilePath = path.join(docsConfig.routeDir, ..._.castArray(routeFileName))
-    return require(routeFilePath).routes()
+  return _.map(docsConfig.routeFilePaths, routeFilePath => {
+    return require(`${docsConfig.routeDir}/${routeFilePath}`).routes()
   })
 }
 
