@@ -79,9 +79,9 @@ function formatErrorResponse (errorResponse) {
 function formatErrorResponseByStatus (errorResponsesForStatus) {
   const formatedErrorResponse = _.map(errorResponsesForStatus, formatErrorResponse)
 
-  const schema = _.size(formatedErrorResponse) > 1 ? {
-    oneOf: formatedErrorResponse,
-  } : formatedErrorResponse[0]
+  const schema = _.size(formatedErrorResponse) > 1
+    ? {oneOf: formatedErrorResponse}
+    : formatedErrorResponse[0]
 
   return {
     content: {
