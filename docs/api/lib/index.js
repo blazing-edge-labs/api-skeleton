@@ -13,26 +13,21 @@ const getMethod = methods => _.find(methods, method => _.includes(documentedMeth
 /**
  * Format parameters in query, params, body, header for docs
  */
-const getFormattedValidationParams = (docsInKey, requiredKeys) => (obj, key) => {
-  const { description, ...schema } = obj
-  const isRequired = _.includes(requiredKeys, key)
-
-  return {
-    description,
-    in: docsInKey,
-    name: key,
-    required: isRequired,
-    schema,
-  }
-}
-
 function validateSection (objSchema, section) {
   if (_.isEmpty(objSchema)) {
     return []
   }
 
   const { swagger } = joiToSwagger(objSchema)
-  return _.map(swagger.properties, getFormattedValidationParams(section, swagger.required))
+  const requiredNamesSet = new Set(swagger.required)
+  
+  return _.map(swagger.properties, ({description, ...schema}, name) => ({
+    description,
+    in: section,
+    name,
+    required: requiredNamesSet.has(name),
+    schema,
+  }))
 }
 
 /**
