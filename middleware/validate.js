@@ -13,13 +13,7 @@ function validator (path, target, schema, options = {}) {
   const opts = _.defaults(options, defaults)
   const schemaCompiled = joi.compile(schema)
 
-  return async function _validator (ctx, next) {
-    // used to populate validation middleware
-    if (!next) {
-      ctx[target] = schema
-      return
-    }
-
+  const _validator = async function (ctx, next) {
     const input = _.get(ctx, path)
 
     const { error: err, value: data } = schemaCompiled.validate(input, opts)
@@ -32,6 +26,10 @@ function validator (path, target, schema, options = {}) {
 
     await next()
   }
+
+  _.set(_validator, ['docValidation', target], schema)
+
+  return _validator
 }
 
 module.exports = {

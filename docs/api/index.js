@@ -44,14 +44,14 @@ async function createDocs (docsConfig) {
   const extendedRouterDocs = await docsLib.fetchExtendedDocsForRoutes(docsConfig)
   const automaticRouteDocs = docsLib.generateDocsFromRoutes(
     requireRoutes(docsConfig),
-    extendedRouterDocs
+    extendedRouterDocs,
   )
 
   const docs = _.merge({}, base, {
     info: {
       version: process.env.npm_package_version,
     },
-    paths: _.merge({}, automaticRouteDocs, extendedRouterDocs)
+    paths: _.merge({}, automaticRouteDocs, extendedRouterDocs),
   })
 
   return createDocsJSON(docs)

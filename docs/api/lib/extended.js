@@ -5,7 +5,7 @@ const path = require('path')
 
 async function fetchBaseYaml () {
   const baseYaml = await fsPromises.readFile(
-    path.join(__dirname, '..', 'base.yaml')
+    path.join(__dirname, '..', 'base.yaml'),
   )
   return yaml.safeLoad(baseYaml)
 }
@@ -29,7 +29,7 @@ async function fetchExtendedDocsForRoutes (docsConfig) {
     routeFileName => {
       const routePath = path.join(__dirname, '..', docsConfig.docsRouteDir, routeFileName)
       return fetchExtendedDocsForRoute(routePath)
-    }
+    },
   )
 
   const extendedRouteDocsObj = {}
@@ -37,7 +37,6 @@ async function fetchExtendedDocsForRoutes (docsConfig) {
 
   // going through every file
   _.each(extendedRouteDocsArray, extendedRouteDoc => {
-
     // going through every path
     _.each(extendedRouteDoc, (extendedRouteMethods, extendedRoutePath) => {
       extendedRouteDocsObj[extendedRoutePath] = {}
@@ -54,5 +53,5 @@ async function fetchExtendedDocsForRoutes (docsConfig) {
 
 module.exports = {
   fetchBaseYaml,
-  fetchExtendedDocsForRoutes
+  fetchExtendedDocsForRoutes,
 }

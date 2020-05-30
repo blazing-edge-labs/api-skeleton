@@ -20,8 +20,8 @@ function validateSection (objSchema, section) {
 
   const { swagger } = joiToSwagger(objSchema)
   const requiredNamesSet = new Set(swagger.required)
-  
-  return _.map(swagger.properties, ({description, ...schema}, name) => ({
+
+  return _.map(swagger.properties, ({ description, ...schema }, name) => ({
     description,
     in: section,
     name,
@@ -36,7 +36,7 @@ function validateSection (objSchema, section) {
 function getValidationSections (routeStack) {
   const routeValidations = {}
   const routeAuths = []
-  
+
   for (const middleware of routeStack) {
     if (middleware.docAuth) {
       routeAuths.push(middleware.docAuth)
@@ -47,29 +47,29 @@ function getValidationSections (routeStack) {
   }
 
   let bodySchema
-  if (validationMiddleware.body) {
-    bodySchema = _.get(joiToSwagger(validationMiddleware.body), 'swagger')
+  if (routeValidations.body) {
+    bodySchema = _.get(joiToSwagger(routeValidations.body), 'swagger')
   }
 
   const parameters = [
-    ...validateSection(validationMiddleware.param, 'path'),
-    ...validateSection(validationMiddleware.query, 'query'),
-    ...validateSection(validationMiddleware.header, 'header'),
+    ...validateSection(routeValidations.param, 'path'),
+    ...validateSection(routeValidations.query, 'query'),
+    ...validateSection(routeValidations.header, 'header'),
   ]
   const definedValidationSections = {
-    header: !!validationMiddleware.header,
-    query: !!validationMiddleware.query,
-    body: !!validationMiddleware.body,
-    param: !!validationMiddleware.param,
+    header: !!routeValidations.header,
+    query: !!routeValidations.query,
+    body: !!routeValidations.body,
+    param: !!routeValidations.param,
   }
 
   const errorResponses = errorDocsLib.getErrorResponses(
-    validationMiddleware.errorConstantObjs,
+    routeValidations.errorConstantObjs,
     definedValidationSections,
   )
 
   return {
-    auth: validationMiddleware.auth,
+    auth: routeValidations.auth,
     parameters,
     bodySchema,
     errorResponses,
