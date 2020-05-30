@@ -4,6 +4,13 @@ const joiToSwagger = require('joi-to-swagger')
 const errorDocsLib = require('docs/api/lib/error')
 const extendedDocs = require('docs/api/lib/extended')
 
+// unique keys for doc validation properties
+const propSymbols = {
+  auth: Symbol('auth'),
+  error: Symbol('error'),
+  validation: Symbol('validation'),
+}
+
 /**
  * Get methods for swagger routes
  */
@@ -38,11 +45,15 @@ function getValidationSections (routeStack) {
   const routeAuths = []
 
   for (const middleware of routeStack) {
-    if (middleware.docAuth) {
-      routeAuths.push(middleware.docAuth)
+    if (middleware[propSymbols.auth]) {
+      routeAuths.push(middleware[propSymbols.auth])
     }
-    if (middleware.docValidation) {
-      Object.assign(routeValidations, middleware.docValidation)
+    if (middleware[propSymbols.validation]) {
+      _.assign(routeValidations, middleware[propSymbols.validation])
+    }
+
+    if (middleware[propSymbols.error]) {
+      _.assign(routeValidations, { errorConstants: middleware[propSymbols.error] })
     }
   }
 
@@ -64,7 +75,7 @@ function getValidationSections (routeStack) {
   }
 
   const errorResponses = errorDocsLib.getErrorResponses(
-    routeValidations.errorConstantObjs,
+    routeValidations.errorConstants,
     definedValidationSections,
   )
 
@@ -138,4 +149,5 @@ function generateDocsFromRoutes (routers) {
 module.exports = {
   ...extendedDocs,
   generateDocsFromRoutes,
+  propSymbols,
 }

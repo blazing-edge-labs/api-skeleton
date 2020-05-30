@@ -1,6 +1,7 @@
 const _ = require('lodash')
 const joi = require('@hapi/joi')
 
+const docsLib = require('docs/api/lib')
 const error = require('error')
 
 const defaults = {
@@ -27,7 +28,7 @@ function validator (path, target, schema, options = {}) {
     await next()
   }
 
-  _.set(_validator, ['docValidation', target], schema)
+  _.set(_validator, [docsLib.propSymbols.validation, target], schema)
 
   return _validator
 }
