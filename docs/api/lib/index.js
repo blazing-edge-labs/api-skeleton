@@ -34,24 +34,17 @@ function validateSection (objSchema, section) {
  * Get swagger validation objects for query, params, body, header
  */
 function getValidationSections (routeStack) {
-  const validationMiddleware = {
-    auth: [],
+  const routeValidations = {}
+  const routeAuths = []
+  
+  for (const middleware of routeStack) {
+    if (middleware.docAuth) {
+      routeAuths.push(middleware.docAuth)
+    }
+    if (middleware.docValidation) {
+      Object.assign(routeValidations, middleware.docValidation)
+    }
   }
-
-  _.each(routeStack, middleware => {
-    if (middleware.name === '_validator') {
-      middleware(validationMiddleware)
-    }
-
-    if (middleware.name === '_errorValidation') {
-      middleware(validationMiddleware)
-    }
-
-    // TODO can be expanded for other auth
-    if (middleware.name === 'jwt') {
-      validationMiddleware.auth.push(middleware.name)
-    }
-  })
 
   let bodySchema
   if (validationMiddleware.body) {
