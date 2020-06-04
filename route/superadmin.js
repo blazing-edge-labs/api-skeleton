@@ -1,5 +1,7 @@
 const joi = require('@hapi/joi')
-const router = new (require('koa-router'))()
+const router = new (require('koa-router'))({
+  prefix: '/admin'
+})
 
 const adminRepo = require('repo/superadmin')
 const auth = require('middleware/auth')
@@ -14,7 +16,7 @@ router.use(auth)
 router.use(roleUser.gte(konst.roleUser.superadmin))
 
 resources.forEach(resource => {
-  router.get(`/admin/${resource}/many`,
+  router.get(`/${resource}/many`,
     validate.query({
       ids: joi.array().items(joi.number().integer()),
     }),
@@ -24,7 +26,7 @@ resources.forEach(resource => {
     },
   )
 
-  router.get(`/admin/${resource}`,
+  router.get(`/${resource}`,
     validate.query({
       sort: joi.array().items(joi.string()).length(2),
       page: joi.number(),
@@ -41,7 +43,7 @@ resources.forEach(resource => {
     },
   )
 
-  router.get(`/admin/${resource}/:id`,
+  router.get(`/${resource}/:id`,
     validate.param({
       id: joi.number().integer().positive().required(),
     }),
@@ -51,7 +53,7 @@ resources.forEach(resource => {
     },
   )
 
-  router.put(`/admin/${resource}/:id`,
+  router.put(`/${resource}/:id`,
     validate.param({
       id: joi.number().integer().positive().required(),
     }),
@@ -61,11 +63,11 @@ resources.forEach(resource => {
     },
   )
 
-  router.post(`/admin/${resource}`, async function (ctx) {
+  router.post(`/${resource}`, async function (ctx) {
     ctx.state.r = await adminRepo[resource].create(ctx.request.body)
   })
 
-  router.del(`/admin/${resource}/:id`,
+  router.del(`/${resource}/:id`,
     validate.param({
       id: joi.number().integer().positive().required(),
     }),
