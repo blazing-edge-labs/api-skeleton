@@ -1,5 +1,5 @@
 const app = new (require('koa'))()
-const mount = require('koa-mount')
+const router = new (require('koa-router'))()
 
 app.silent = process.env.LOG < 3
 app.use(require('koa-response-time')())
@@ -10,9 +10,11 @@ app.use(require('kcors')())
 app.use(require('koa-bodyparser')())
 app.use(require('middleware/error'))
 
-app.use(mount('/', require('route/index').routes()))
-app.use(mount('/', require('route/user').routes()))
-app.use(mount('/admin', require('route/superadmin').routes())) // Super-admin API endpoints
+router.use(require('route/index').routes())
+router.use(require('route/user').routes())
+router.use('/admin', require('route/superadmin').routes())
+
+app.use(router.routes())
 
 app.use(async function (ctx, next) {
   ctx.throw(404)
