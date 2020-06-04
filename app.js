@@ -11,15 +11,16 @@ app.use(require('kcors')())
 app.use(require('koa-bodyparser')())
 app.use(require('middleware/error'))
 
-router.use(require('route/index').routes())
-router.use(require('route/user').routes())
-router.use('/admin', require('route/superadmin').routes())
-
+// needs to be on top because of responder
 if (JSON.parse(process.env.SERVE_DOCS)) {
   router.get('/docs', async function (ctx) {
     await send(ctx, 'redoc-static.html')
   })
 }
+
+router.use(require('route/index').routes())
+router.use(require('route/user').routes())
+router.use('/admin', require('route/superadmin').routes())
 
 app.use(router.routes())
 

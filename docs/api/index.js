@@ -2,31 +2,17 @@ const _ = require('lodash')
 const fsPromises = require('fs').promises
 const path = require('path')
 
+const app = require('app')
 const docsLib = require('docs/api/lib')
 
-const docsConfiguration = {
-  // location of the routes
-  routeDir: 'route',
-  // location of the route extended docs
-  docsRouteDir: 'route',
-  /**
-   * Automatic docs will add these files and combine with the extended docs
-   * If you want to use subdirs in the "route" folder then add the paths as arrays
-   * e.g. "route/user/friends"
-   *
-   * routeFilePaths: [ ['user', 'friends'] ]
-   */
-  routeFilePaths: [
-    'index',
-    'user',
-  ],
-}
+const fetchRouter = middlewareArray =>
+  _(middlewareArray)
+  .filter(middleware => middleware.name === 'dispatch')
+  .map(middleware => middleware.router)
+  .first()
 
-// automatic router docs
-function requireRoutes (docsConfig) {
-  return _.map(docsConfig.routeFilePaths, routeFilePath => {
-    return require(`${docsConfig.routeDir}/${routeFilePath}`).routes()
-  })
+const docsConfiguration = {
+  routers: fetchRouter(app.middleware),
 }
 
 async function createDocsJSON (docs) {
@@ -43,7 +29,7 @@ async function createDocs (docsConfig) {
   const base = await docsLib.fetchBaseYaml()
   const extendedRouterDocs = await docsLib.fetchExtendedDocsForRoutes(docsConfig)
   const automaticRouteDocs = docsLib.generateDocsFromRoutes(
-    requireRoutes(docsConfig),
+    docsConfig.routers,
     extendedRouterDocs,
   )
 
