@@ -14,7 +14,7 @@ router.use(auth)
 router.use(roleUser.gte(konst.roleUser.superadmin))
 
 resources.forEach(resource => {
-  router.get(`/${resource}/many`,
+  router.get(`/admin/${resource}/many`,
     validate.query({
       ids: joi.array().items(joi.number().integer()),
     }),
@@ -24,7 +24,7 @@ resources.forEach(resource => {
     },
   )
 
-  router.get(`/${resource}`,
+  router.get(`/admin/${resource}`,
     validate.query({
       sort: joi.array().items(joi.string()).length(2),
       page: joi.number(),
@@ -41,7 +41,7 @@ resources.forEach(resource => {
     },
   )
 
-  router.get(`/${resource}/:id`,
+  router.get(`/admin/${resource}/:id`,
     validate.param({
       id: joi.number().integer().positive().required(),
     }),
@@ -51,7 +51,7 @@ resources.forEach(resource => {
     },
   )
 
-  router.put(`/${resource}/:id`,
+  router.put(`/admin/${resource}/:id`,
     validate.param({
       id: joi.number().integer().positive().required(),
     }),
@@ -61,11 +61,11 @@ resources.forEach(resource => {
     },
   )
 
-  router.post(`/${resource}`, async function (ctx) {
+  router.post(`/admin/${resource}`, async function (ctx) {
     ctx.state.r = await adminRepo[resource].create(ctx.request.body)
   })
 
-  router.del(`/${resource}/:id`,
+  router.del(`/admin/${resource}/:id`,
     validate.param({
       id: joi.number().integer().positive().required(),
     }),
