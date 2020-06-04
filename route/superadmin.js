@@ -1,7 +1,5 @@
 const joi = require('@hapi/joi')
-const router = new (require('koa-router'))({
-  prefix: '/admin'
-})
+const router = new (require('koa-router'))()
 
 const adminRepo = require('repo/superadmin')
 const auth = require('middleware/auth')
