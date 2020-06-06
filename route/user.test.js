@@ -29,7 +29,7 @@ test.api('signin new', async function (t, request) {
 
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
-  t.ok(_.get(r2.body, 'data.token'), 'token')
+  t.ok(r2.body.token, 'token')
   mailer.passwordlessLink = passwordlessLink
   mailer.stub.restore()
 })
@@ -58,7 +58,7 @@ test.api('signin existing', async function (t, request) {
 
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
-  t.ok(_.get(r2.body, 'data.token'), 'token')
+  t.ok(r2.body.token, 'token')
   mailer.passwordlessLink = passwordlessLink
   mailer.stub.restore()
 })
@@ -107,7 +107,7 @@ test.api('signin superadmin', async function (t, request) {
 
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
-  t.ok(_.get(r2.body, 'data.token'), 'token')
+  t.ok(r2.body.token, 'token')
   mailer.passwordlessLink = passwordlessLink
   mailer.stub.restore()
 })
@@ -139,7 +139,7 @@ test.api('auth', async function (t, request) {
   })
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
-  t.ok(_.get(r.body, 'data.token'), 'token')
+  t.ok(r.body.token, 'token')
 })
 
 test.api('auth wrong password', async function (t, request) {
@@ -165,7 +165,7 @@ test.api('self get', async function (t, request) {
   const r = await request.get('/self').set(await test.auth('user1@example.com', 'user1'))
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
-  t.is(_.get(r.body, 'data.email'), 'user1@example.com', 'email')
+  t.is(r.body.email, 'user1@example.com', 'email')
 })
 
 test.api('self update', async function (t, request) {
@@ -193,7 +193,7 @@ test.api('self add and change password', async function (t, request) {
   })
   t.is(r3.status, 200, 'success')
   t.notok(r3.body.error, 'no error')
-  t.ok(_.get(r3.body, 'data.token'), 'token')
+  t.ok(r3.body.token, 'token')
 })
 
 test.api('self change password with wrong password', async function (t, request) {
@@ -210,7 +210,7 @@ test.api('self change password with wrong password', async function (t, request)
   })
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
-  t.ok(_.get(r2.body, 'data.token'), 'token')
+  t.ok(r2.body.token, 'token')
 })
 
 test.api('self change email with disabled password', async function (t, request) {
@@ -244,7 +244,7 @@ test.api('self change email', async function (t, request) {
   })
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
-  t.ok(_.get(r2.body, 'data.token'), 'token')
+  t.ok(r2.body.token, 'token')
 })
 
 test.api('self change email with wrong password', async function (t, request) {
@@ -261,14 +261,14 @@ test.api('self change email with wrong password', async function (t, request) {
   })
   t.is(r2.status, 200, 'success')
   t.notok(r2.body.error, 'no error')
-  t.ok(_.get(r2.body, 'data.token'), 'token')
+  t.ok(r2.body.token, 'token')
 })
 
 test.api('self role get', async function (t, request) {
   const r = await request.get('/self/role').set(await test.auth('user1@example.com', 'user1'))
   t.is(r.status, 200, 'success')
   t.notok(r.body.error, 'no error')
-  t.deepEqual(r.body.data, {
+  t.deepEqual(r.body, {
     user: konst.roleUser.none,
     admin: false,
   })
@@ -320,14 +320,14 @@ test.api('password recover', async function (t, request) {
     password: 'newnewnew',
   })
   t.is(r.status, 200, 'success')
-  t.ok(_.get(r.body, 'data.token'), 'token')
+  t.ok(r.body.token, 'token')
 
   mailer.forgotPassword = forgotPassword
   mailer.stub.restore()
 })
 
 test.api('role put admin by superadmin', async function (t, request) {
-  const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.data.id')
+  const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.id')
   const r = await request.put(`/user/${id}/role`).set(await test.auth('superadmin@example.com', 'superadmin')).send({
     role: konst.roleUser.admin,
   })
@@ -336,7 +336,7 @@ test.api('role put admin by superadmin', async function (t, request) {
 })
 
 test.api('role put admin by admin', async function (t, request) {
-  const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.data.id')
+  const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.id')
   const r = await request.put(`/user/${id}/role`).set(await test.auth('admin@example.com', 'admin')).send({
     role: konst.roleUser.admin,
   })
@@ -345,7 +345,7 @@ test.api('role put admin by admin', async function (t, request) {
 })
 
 test.api('role put superadmin by admin', async function (t, request) {
-  const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.data.id')
+  const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.id')
   const r = await request.put(`/user/${id}/role`).set(await test.auth('admin@example.com', 'admin')).send({
     role: konst.roleUser.superadmin,
   })
@@ -354,7 +354,7 @@ test.api('role put superadmin by admin', async function (t, request) {
 })
 
 test.api('role put none by admin', async function (t, request) {
-  const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.data.id')
+  const id = _.get(await request.get('/user/email/user1@example.com').set(await test.auth('superadmin@example.com', 'superadmin')), 'body.id')
   const r = await request.put(`/user/${id}/role`).set(await test.auth('admin@example.com', 'admin')).send({
     role: konst.roleUser.none,
   })

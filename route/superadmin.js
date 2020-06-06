@@ -5,11 +5,9 @@ const adminRepo = require('repo/superadmin')
 const auth = require('middleware/auth')
 const konst = require('konst')
 const resources = adminRepo.resourceList
-const responder = require('middleware/responder')
 const roleUser = require('middleware/roleUser')
 const validate = require('middleware/validate')
 
-router.use(responder)
 router.use(auth)
 router.use(roleUser.gte(konst.roleUser.superadmin))
 
@@ -20,7 +18,7 @@ resources.forEach(resource => {
     }),
     async function (ctx) {
       const { ids } = ctx.v.query
-      ctx.state.r = await adminRepo[resource].getMany(ids)
+      ctx.body = await adminRepo[resource].getMany(ids)
     },
   )
 
@@ -34,7 +32,7 @@ resources.forEach(resource => {
     async function (ctx) {
       const { query } = ctx.v
       const count = await adminRepo[resource].getAllCount()
-      ctx.state.r = {
+      ctx.body = {
         items: await adminRepo[resource].getAll(query),
         count: count[0].total,
       }
@@ -47,7 +45,7 @@ resources.forEach(resource => {
     }),
     async function (ctx) {
       const { id } = ctx.v.param
-      ctx.state.r = await adminRepo[resource].getById(id)
+      ctx.body = await adminRepo[resource].getById(id)
     },
   )
 
@@ -57,12 +55,12 @@ resources.forEach(resource => {
     }),
     async function (ctx) {
       const { id } = ctx.v.param
-      ctx.state.r = await adminRepo[resource].update(id, ctx.request.body)
+      ctx.body = await adminRepo[resource].update(id, ctx.request.body)
     },
   )
 
   router.post(`/${resource}`, async function (ctx) {
-    ctx.state.r = await adminRepo[resource].create(ctx.request.body)
+    ctx.body = await adminRepo[resource].create(ctx.request.body)
   })
 
   router.del(`/${resource}/:id`,
@@ -72,7 +70,7 @@ resources.forEach(resource => {
     async function (ctx) {
       const { id } = ctx.v.param
       await adminRepo[resource].remove(id)
-      ctx.state.r = {}
+      ctx.body = {}
     },
   )
 })
