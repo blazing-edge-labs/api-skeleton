@@ -14,7 +14,6 @@
     "connection-string": "^3.2.0",
     "crypto-random-string": "^3.2.0",
     "dotenv-safe": "^8.2.0",
-    "is-promise": "^3.0.0",
     "jsonwebtoken": "^8.5.1",
     "kcors": "^2.2.2",
     "koa": "^2.11.0",
