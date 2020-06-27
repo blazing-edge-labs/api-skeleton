@@ -61,7 +61,7 @@ test('map.loading', async t => {
     c: ['id', cOfAResolver],
   })
 
-  const dbSpy = { ...db }
+  const dbSpy = Object.create(db)
   dbSpy.any = callCounter(db.any)
 
   const r = await db.any('SELECT * FROM "test_A"')
