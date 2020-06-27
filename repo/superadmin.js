@@ -49,7 +49,6 @@ const getMany = (resource) => {
 const getAllCount = (resource) => {
   return async () => {
     return db.any('SELECT count(*) AS total FROM $1~', resource)
-    .catch(error.db)
   }
 }
 
@@ -69,7 +68,6 @@ const getById = (resource) => {
 const remove = (resource) => {
   return async (id) => {
     return db.none('DELETE FROM $1~ WHERE id = $2', [resource, id])
-    .catch(error.db)
   }
 }
 
@@ -77,7 +75,6 @@ const create = (resource) => {
   const { columnSet } = resourceMaps[resource]
   return async (data) => {
     return db.one(helper.insert(data, columnSet) + ' RETURNING id')
-    .catch(error.db)
   }
 }
 
@@ -85,7 +82,6 @@ const update = (resource) => {
   const { columnSet } = resourceMaps[resource]
   return async (id, data) => {
     return db.one(helper.update(data, columnSet) + ' WHERE id = $1 RETURNING id', id)
-    .catch(error.db)
   }
 }
 
