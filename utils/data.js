@@ -39,27 +39,41 @@ function memoRef (fn, cache = new WeakMap()) {
   }
 }
 
-function byKeyed (iterable, mapKey, mapValue = identity) {
+const toFn = x => {
+  if (x == null) return identity
+  if (typeof x === 'function') return x
+  return z => z[x]
+}
+
+function byKeyed (iterable, mapKey, mapValue, defValue) {
+  mapKey = toFn(mapKey)
+  mapValue = toFn(mapValue)
+
   const m = new Map()
 
   for (const item of iterable) {
     m.set(mapKey(item), mapValue(item))
   }
 
-  return key => {
-    const value = m.get(key)
-    return value == null ? null : value
-  }
+  return defValue === undefined
+    ? key => m.get(key)
+    : key => m.has(key) ? m.get(key) : defValue
 }
 
-function byGrouped (iterable, mapKey, mapValue = identity) {
-  const getGroup = memoRef(() => [], new Map())
+function byGrouped (iterable, mapKey, mapValue, defValue) {
+  mapKey = toFn(mapKey)
+  mapValue = toFn(mapValue)
+
+  const m = new Map()
 
   for (const item of iterable) {
-    getGroup(mapKey(item)).push(mapValue(item))
+    const key = mapKey(item)
+    const group = m.get(key)
+    if (group) group.push(mapValue(item))
+    else m.set(key, [mapValue(item)])
   }
 
-  return getGroup
+  return key => m.get(key) || defValue
 }
 
 function * mapIterable (iterable, fn) {
