@@ -2,7 +2,7 @@ const { memoRef } = require('utils/data')
 
 const defaultScheduler = job => Promise.resolve(job).then(process.nextTick)
 
-function createBatcher (batchResolver, { batchMaxSize = Infinity, schedule = defaultScheduler, onFlush } = {}) {
+function createBatcher (batchResolver, { batchMaxSize = Infinity, cache, autoClearCache = false, schedule = defaultScheduler } = {}) {
   let qInputs = []
   let qResolvers = []
 
@@ -12,7 +12,7 @@ function createBatcher (batchResolver, { batchMaxSize = Infinity, schedule = def
     qInputs = []
     qResolvers = []
 
-    if (onFlush) onFlush()
+    if (autoClearCache) cache.clear()
 
     if (inputs.length <= batchMaxSize) {
       processBatch(inputs, resolvers)
@@ -40,16 +40,18 @@ function createBatcher (batchResolver, { batchMaxSize = Infinity, schedule = def
     if (qResolvers.push(r) === 1) schedule(flush)
   }
 
-  return input => {
+  const batch = input => {
     qInputs.push(input)
     return new Promise(queueResolver)
   }
+
+  return cache
+    ? memoRef(batch, cache)
+    : batch
 }
 
-function createLoader (batchResolver, { batchMaxSize = 1000, schedule = defaultScheduler } = {}) {
-  const cache = new Map()
-  const batch = createBatcher(batchResolver, { batchMaxSize, schedule, onFlush: () => cache.clear() })
-  return memoRef(batch, cache)
+function createLoader (batchResolver, { batchMaxSize = 1000, cache = new Map(), autoClearCache = true, schedule = defaultScheduler } = {}) {
+  return createBatcher(batchResolver, { batchMaxSize, cache, autoClearCache, schedule })
 }
 
 module.exports = {
