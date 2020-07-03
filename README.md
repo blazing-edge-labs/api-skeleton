@@ -3,7 +3,7 @@
 Backend skeleton to serve an API to [web-skeleton](https://github.com/blazing-edge-labs/web-skeleton).
 Can be easily changed/extended for pretty much anything.
 
-Based on Node.js (8), [Koa](https://koajs.com), and PostgreSQL (>10).
+Based on Node.js (12), [Koa](https://koajs.com), and PostgreSQL (>10).
 
 ## Installation
 
@@ -19,18 +19,6 @@ Probably the easiest way to start a fresh local DB for development, is to just u
 
 ```
 docker run --name api-pg -e POSTGRES_USER=api -e POSTGRES_PASSWORD=api -p 5432:5432 -d postgres:10-alpine
-```
-
-Such DB can be easily viewed using another docker image:
-
-```
-docker run -p 8081:8081 --link api-pg:pg -e DATABASE_URL=postgres://api:api@pg:5432/api?sslmode=disable --rm sosedoff/pgweb
-```
-
-or by using `psql` if you have it installed:
-
-```
-psql postgres://api:api@127.0.0.1:5432/api
 ```
 
 Create a `.env` file based on `.env.example`:
@@ -57,4 +45,25 @@ After initialization, you can start the application in development mode:
 
 ```
 npm run dev
+```
+
+## Viewing DB
+
+You can use any DB client/tool you like, but here are couple we suggest:
+
+### pgweb
+
+The local in-docker DB can be viewed using another docker image:
+
+```
+docker run -p 127.0.0.1:8081:8081 --link api-pg:pg -e DATABASE_URL=postgres://api:api@pg:5432/api?sslmode=disable --rm sosedoff/pgweb
+```
+
+To connect to a remote DB, beside changing `DATABASE_URL`, you'll have to also remove the `--link api-pg:pg` and `?sslmode=disable` parts.
+
+### psql
+
+`psql` is a common cli tool to work with PostgreSQL. Once installed, you can:
+```
+psql postgres://api:api@127.0.0.1:5432/api
 ```
