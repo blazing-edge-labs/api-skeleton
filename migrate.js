@@ -4,7 +4,7 @@ const argv = require('mri')(process.argv.slice(2), {
 })
 const migratio = require('migratio')
 
-const { db, sql, pgp } = require('db')
+const { pgpDB: db, sql, pgp } = require('db')
 
 const command = argv._[0]
 

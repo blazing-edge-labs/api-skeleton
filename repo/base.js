@@ -2,7 +2,6 @@ const _ = require('lodash')
 const assert = require('assert')
 
 const { db, pgp } = require('db')
-const error = require('error')
 
 const { format, csv } = pgp.as
 
@@ -66,7 +65,7 @@ function createResolver (getter, keyColumn, { map = _.identity, multi = false, c
   if (_.isString(getter)) {
     const leftPart = format('SELECT * FROM $1~ WHERE $2~ IN', [getter, keyColumn])
     const rightPart = condition ? `AND ${condition}` : ''
-    getter = (keys, { t = db }) => t.any(`${leftPart} (${csv(keys)}) ${rightPart}`).catch(error.db)
+    getter = (keys, { t = db }) => t.any(`${leftPart} (${csv(keys)}) ${rightPart}`)
   } else {
     assert(!condition, '"condition" option valid only with createResolver(tableName, ...)')
   }

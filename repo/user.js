@@ -62,7 +62,6 @@ async function create (email, password) {
       id: user.id,
       role: konst.roleUser.none,
     })
-    .catch(error.db)
 
     return user
   })
@@ -74,7 +73,6 @@ async function updatePassword (id, password) {
     SET password = $2
     WHERE id = $1
   `, [id, await hashPassword(password)])
-  .catch(error.db)
 }
 
 async function updateEmail (id, email) {
@@ -129,7 +127,6 @@ async function getByEmailSilent (email) {
     FROM "user"
     WHERE email = $1
   `, [email])
-  .catch(error.db)
   .then(map)
 }
 
@@ -152,7 +149,6 @@ async function getRoleById (id) {
     FROM user_role
     WHERE user_id = $[id]
   `, { id })
-  .catch(error.db)
 
   return r ? r.role : konst.roleUser.none
 }

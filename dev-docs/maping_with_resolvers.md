@@ -21,7 +21,6 @@ const map = mapper({
 
 async function getAllUsers (includeProfiles = false) {
   return db.any('SELECT * FROM "user"')
-  .catch(error.db)
   .then(map.loading({
     contacts: {},
     profile: includeProfiles && {
@@ -93,8 +92,7 @@ const byBookIdResolver = createResolver(
     FROM "author" a
     JOIN "author_book_rel" r ON r.author_id = a.id
     WHERE r.book_id IN ($1:csv)
-  `, [bookIds])
-  .catch(error.db),
+  `, [bookIds]),
   // keyColumn still needed
   'book_id',
   { map, multi: true }

@@ -12,7 +12,6 @@ async function create (userId) {
     VALUES ($1, $2)
     RETURNING token
   `, [userId, randomString({ length: 32 })])
-  .catch(error.db)
   return token
 }
 
@@ -27,7 +26,7 @@ async function createByEmail (email) {
 }
 
 async function remove (userId) {
-  return db.none('DELETE FROM password_token WHERE user_id = $1', [userId]).catch(error.db)
+  return db.none('DELETE FROM password_token WHERE user_id = $1', [userId])
 }
 
 async function get (token) {
