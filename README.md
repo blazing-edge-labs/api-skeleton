@@ -24,7 +24,7 @@ docker run --name api-pg -e POSTGRES_USER=api -e POSTGRES_PASSWORD=api -p 5432:5
 Such DB can be easily viewed using another docker image:
 
 ```
-docker run -p 8081:8081 --link api-pg:pg -e DATABASE_URL=postgres://api:api@pg:5432/api?sslmode=disable --rm sosedoff/pgweb
+docker run -p 127.0.0.1:8081:8081 --link api-pg:pg -e DATABASE_URL=postgres://api:api@pg:5432/api?sslmode=disable --rm sosedoff/pgweb
 ```
 
 or by using `psql` if you have it installed:
