@@ -3,7 +3,7 @@
 Backend skeleton to serve an API to [web-skeleton](https://github.com/blazing-edge-labs/web-skeleton).
 Can be easily changed/extended for pretty much anything.
 
-Based on Node.js (8), [Koa](https://koajs.com), and PostgreSQL (>10).
+Based on Node.js (12), [Koa](https://koajs.com), and PostgreSQL (>10).
 
 ## Installation
 
