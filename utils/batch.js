@@ -50,7 +50,7 @@ function createBatcher (batchResolver, { batchMaxSize = Infinity, cache, autoCle
     : batch
 }
 
-function createLoader (batchResolver, { batchMaxSize = 1000, cache = new Map(), autoClearCache = true, schedule = defaultScheduler } = {}) {
+function createLoader (batchResolver, { batchMaxSize = 1000, cache = new Map(), autoClearCache = !!cache, schedule = defaultScheduler } = {}) {
   return createBatcher(batchResolver, { batchMaxSize, cache, autoClearCache, schedule })
 }
 
