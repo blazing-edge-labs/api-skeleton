@@ -1,4 +1,5 @@
 const test = require('test')
+const { all } = require('utils/promise')
 const { mapper, createLoaderT } = require('./base')
 const { db } = require('db')
 
@@ -25,7 +26,7 @@ test('createLoaderT', async t => {
   })
 
   const loadByIdT = createLoaderT.selectOne({ from: 'test_loader', by: 'id', map })
-  const loadByGroupT = createLoaderT.selectAll({ from: 'test_loader', by: 'group_num', map })
+  const loadByGroupT = createLoaderT.selectAll({ from: 'test_loader', by: 'group_num', where: '"id" > 5 ORDER BY "id" DESC', map })
 
   const loadById = loadByIdT(db)
   const promise = loadById(8)
@@ -55,6 +56,24 @@ test('createLoaderT', async t => {
     const promise4 = txLoadById(8)
     t.ok(promise3 !== promise4, 'after loading, it should not be cached any more')
     await promise4
+
+    t.deepEqual(await all([1, 7, 3, 5], txLoadById), [
+      { id: 1, group: 1 },
+      { id: 7, group: 2 },
+      { id: 3, group: 1 },
+      { id: 5, group: 1 },
+    ])
+
+    t.deepEqual(await all([1, 2, 3], loadByGroupT(tx)), [
+      [],
+      [
+        { id: 7, group: 2 },
+        { id: 6, group: 2 },
+      ],
+      [
+        { id: 8, group: 3 },
+      ],
+    ])
   })
 
   await db.query('DROP TABLE test_loader')
