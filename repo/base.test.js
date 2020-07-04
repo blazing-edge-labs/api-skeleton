@@ -1,0 +1,61 @@
+const test = require('test')
+const { mapper, createLoaderT } = require('./base')
+const { db } = require('db')
+
+test('createLoaderT', async t => {
+  await db.query(`
+    CREATE TABLE test_loader (
+      id int,
+      group_num int
+    );
+    INSERT INTO test_loader (id, group_num) VALUES
+    (1, 1),
+    (2, 1),
+    (3, 1),
+    (4, 1),
+    (5, 1),
+    (6, 2),
+    (7, 2),
+    (8, 3);
+  `)
+
+  const map = mapper({
+    id: 'id',
+    group: 'group_num',
+  })
+
+  const loadByIdT = createLoaderT.selectOne({ from: 'test_loader', by: 'id', map })
+  const loadByGroupT = createLoaderT.selectAll({ from: 'test_loader', by: 'group_num', map })
+
+  const loadById = loadByIdT(db)
+  const promise = loadById(8)
+  t.ok(promise === Promise.resolve(promise), 'loader returns a promise')
+  t.ok(promise === loadById(8), 'loader should cache by key')
+  t.ok(loadById === loadByIdT(db), 'for same DB, loaderT should return same loader')
+  t.deepEqual(await promise, { id: 8, group: 3 })
+  const promise2 = loadById(8)
+  t.ok(promise !== promise2, 'after loading, it should not be cached any more')
+
+  const loadByGroup = loadByGroupT(db)
+  t.ok(loadByGroup === loadByGroupT(db), 'for same DB, loaderT should return same loader')
+  t.deepEqual((await loadByGroup(2)).sort((a, b) => a.id - b.id), [
+    { id: 6, group: 2 },
+    { id: 7, group: 2 },
+  ])
+
+  await db.tx(async tx => {
+    const txLoadById = loadByIdT(tx)
+
+    t.ok(txLoadById !== loadById, 'loaderT for different t should return different loader')
+
+    const promise3 = txLoadById(8)
+    t.ok(promise3 !== promise2, 'loader cache should differ for different t')
+    t.ok(txLoadById === loadByIdT(tx), 'for same tx, loaderT should return same loader')
+    t.deepEqual(await promise3, { id: 8, group: 3 })
+    const promise4 = txLoadById(8)
+    t.ok(promise3 !== promise4, 'after loading, it should not be cached any more')
+    await promise4
+  })
+
+  await db.query('DROP TABLE test_loader')
+})
