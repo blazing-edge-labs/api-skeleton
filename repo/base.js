@@ -49,8 +49,10 @@ const createSelectLoaderT = ({ multi }) => ({ from: table, by: keyColumn, where 
   return createLoaderT(t => async keys => {
     const r = await t.any(`${leftPart} (${as.csv(keys)}) ${rightPart}`)
 
-    if (multi && keys.length === 1) {
-      return [r.map(mapItem)]
+    if (keys.length === 1) {
+      return multi
+        ? [r.map(mapItem)]
+        : [r.length ? mapItem(r[0]) : null]
     }
 
     return multi
