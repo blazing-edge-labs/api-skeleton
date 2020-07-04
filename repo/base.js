@@ -54,7 +54,7 @@ const createSelectLoaderT = ({ multi }) => ({ from: table, by: keyColumn, where 
     }
 
     return multi
-      ? keys.map(byGrouped(r, keyColumn, mapItem, []))
+      ? keys.map(byGrouped(r, keyColumn, mapItem))
       : keys.map(byKeyed(r, keyColumn, mapItem, null))
   })
 }

@@ -55,25 +55,26 @@ function byKeyed (iterable, mapKey, mapValue, defValue) {
     m.set(mapKey(item), mapValue(item))
   }
 
-  return defValue === undefined
-    ? key => m.get(key)
-    : key => m.has(key) ? m.get(key) : defValue
+  return key => {
+    const val = m.get(key)
+    return val === undefined ? defValue : val
+  }
 }
 
 function byGrouped (iterable, mapKey, mapValue, defValue) {
   mapKey = toFn(mapKey)
   mapValue = toFn(mapValue)
 
-  const m = new Map()
+  const cache = new Map()
+  const getGroup = memoRef(() => [], cache)
 
   for (const item of iterable) {
-    const key = mapKey(item)
-    const group = m.get(key)
-    if (group) group.push(mapValue(item))
-    else m.set(key, [mapValue(item)])
+    getGroup(mapKey(item)).push(mapValue(item))
   }
 
-  return key => m.get(key) || defValue
+  return defValue === undefined
+    ? getGroup
+    : key => cache.get(key) || defValue
 }
 
 function * mapIterable (iterable, fn) {
