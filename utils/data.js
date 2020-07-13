@@ -40,10 +40,18 @@ function memoRef (fn, cache = new WeakMap()) {
 }
 
 const toFn = x => {
-  if (x == null) return identity
-  if (typeof x === 'function') return x
-  if (typeof x === 'string') return obj => obj[x]
-  throw new TypeError('invalid mapper type')
+  if (x == null) {
+    return identity
+  }
+  switch (typeof x) {
+    case 'function':
+      return x
+    case 'string':
+    case 'symbol':
+      return z => z[x]
+    default:
+      throw new TypeError('invalid mapper type')
+  }
 }
 
 function byKeyed (iterable, mapKey, mapValue, defValue) {
