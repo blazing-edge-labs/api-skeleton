@@ -24,7 +24,7 @@
     "koa-jwt": "^3.6.0",
     "koa-response-time": "^2.1.0",
     "koa-router": "^8.0.8",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "migratio": "^2.0.3",
     "mri": "^1.1.5",
     "nested-error-stacks": "^2.1.0",
