@@ -2,47 +2,42 @@ const { memoRef } = require('utils/data')
 
 const defaultScheduler = job => Promise.resolve(job).then(process.nextTick)
 
-function createBatcher (batchResolver, { batchMaxSize = Infinity, cache, autoClearCache = false, schedule = defaultScheduler } = {}) {
-  let qInputs = []
-  let qResolvers = []
+function createBatcher (batchResolver, { batchMaxSize = Infinity, cache, autoClearCache, schedule = defaultScheduler } = {}) {
+  let queued = []
 
   const flush = () => {
-    const inputs = qInputs
-    const resolvers = qResolvers
-    qInputs = []
-    qResolvers = []
+    const batch = queued
+    queued = []
 
-    if (autoClearCache) cache.clear()
+    if (autoClearCache) {
+      cache.clear()
+    }
 
-    if (inputs.length <= batchMaxSize) {
-      processBatch(inputs, resolvers)
+    if (batch.length <= batchMaxSize) {
+      processBatch(batch)
     } else {
-      for (let i = 0; i < inputs.length; i += batchMaxSize) {
-        processBatch(
-          inputs.slice(i, i + batchMaxSize),
-          resolvers.slice(i, i + batchMaxSize),
-        )
+      for (let i = 0; i < batch.length; i += batchMaxSize) {
+        processBatch(batch.slice(i, i + batchMaxSize))
       }
     }
   }
 
-  const processBatch = async (inputs, resolvers) => {
+  const processBatch = async (batch) => {
     try {
-      const results = await batchResolver(inputs)
-      resolvers.forEach((resolve, i) => resolve(results[i]))
+      const results = await batchResolver(batch.map(it => it.input))
+      batch.forEach((it, i) => it.resolve(results[i]))
     } catch (error) {
       const rejection = Promise.reject(error)
-      resolvers.forEach(resolve => resolve(rejection))
+      batch.forEach(it => it.resolve(rejection))
     }
   }
 
-  const queueResolver = r => {
-    if (qResolvers.push(r) === 1) schedule(flush)
-  }
-
   const batch = input => {
-    qInputs.push(input)
-    return new Promise(queueResolver)
+    return new Promise(resolve => {
+      if (queued.push({ input, resolve }) === 1) {
+        schedule(flush)
+      }
+    })
   }
 
   return cache
