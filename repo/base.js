@@ -1,6 +1,6 @@
 const assert = require('assert')
 
-const { byKeyed, byGrouped, memoRef, identity } = require('utils/data')
+const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
 const { as } = require('db').pgp
 
@@ -38,7 +38,7 @@ function mapper (mapping) {
 
 function createLoaderT (batchResolverT, { batchMaxSize = 1000 } = {}) {
   assert(batchResolverT.length === 1, 'batchResolver creator must be a function with single argument')
-  return memoRef(t => createLoader(batchResolverT(t), { batchMaxSize }))
+  return memoRefIn(new WeakMap(), t => createLoader(batchResolverT(t), { batchMaxSize }))
 }
 
 const createSelectLoaderT = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = identity }) => {

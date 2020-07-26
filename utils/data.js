@@ -31,7 +31,7 @@ class Queue {
   }
 }
 
-function memoRef (fn, cache = new WeakMap()) {
+function memoRefIn (cache, fn) {
   return key => {
     let ref = cache.get(key)
     if (!ref) cache.set(key, (ref = fn(key)))
@@ -75,7 +75,7 @@ function byGrouped (iterable, mapKey, mapValue, defValue) {
   mapValue = toFn(mapValue)
 
   const cache = new Map()
-  const getGroup = memoRef(() => [], cache)
+  const getGroup = memoRefIn(cache, () => [])
 
   for (const item of iterable) {
     getGroup(mapKey(item)).push(mapValue(item))
@@ -96,7 +96,7 @@ function * mapIterable (iterable, fn) {
 module.exports = {
   Queue,
   identity,
-  memoRef,
+  memoRefIn,
   byKeyed,
   byGrouped,
   mapIterable,

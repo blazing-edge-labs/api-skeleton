@@ -1,8 +1,8 @@
-const { memoRef } = require('utils/data')
+const { memoRefIn } = require('utils/data')
 
 const defaultScheduler = job => Promise.resolve(job).then(process.nextTick)
 
-function createBatcher (batchResolver, { batchMaxSize = Infinity, cache, autoClearCache, schedule = defaultScheduler } = {}) {
+function createBatcher (batchResolver, { batchMaxSize = Infinity, cache = null, autoClearCache = false, schedule = defaultScheduler } = {}) {
   let queued = []
 
   const flush = () => {
@@ -41,7 +41,7 @@ function createBatcher (batchResolver, { batchMaxSize = Infinity, cache, autoCle
   }
 
   return cache
-    ? memoRef(batch, cache)
+    ? memoRefIn(cache, batch)
     : batch
 }
 
