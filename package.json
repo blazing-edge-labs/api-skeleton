@@ -51,12 +51,13 @@
   },
   "scripts": {
     "ci": "run-p lint test",
-    "db:recreate": "run-s db:drop \"migrate up\"",
-    "db:drop": "run-s \"migrate drop\"",
-    "db:seed": "run-s \"migrate seed\"",
+    "db:recreate": "run-s db:drop \"db up\"",
+    "db:migrate": "runs-s \"db up\"",
+    "db:drop": "run-s \"db drop\"",
+    "db:seed": "run-s \"db seed\"",
     "dev": "NODE_PATH=. node-dev --no-notify index.js",
     "lint": "eslint .",
-    "migrate": "NODE_PATH=. node -r ./env db/migrate.js",
+    "db": "NODE_PATH=. node -r ./env db/cli.js",
     "start": "NODE_PATH=. node index.js",
     "test": "NODE_ENV=test run-s db:recreate db:seed test:run",
     "test:run": "NODE_PATH=. tape -r ./env '{!(node_modules)/**/*.test.js,./*.test.js}' | tap-difflet"
