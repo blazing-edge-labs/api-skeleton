@@ -51,9 +51,9 @@
     "yarn": "1"
   },
   "scripts": {
-    "ci": "run-p lint coverage",
+    "ci": "run-s lint coverage",
     "db:recreate": "run-s db:drop \"db up\"",
-    "db:migrate": "runs-s \"db up\"",
+    "db:migrate": "run-s \"db up\"",
     "db:drop": "run-s \"db drop\"",
     "db:seed": "run-s \"db seed\"",
     "dev": "NODE_PATH=. node-dev --no-notify index.js",
