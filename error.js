@@ -3,7 +3,9 @@ const _ = require('lodash')
 const assert = require('assert')
 const { QueryFileError, QueryResultError, queryResultErrorCode } = require('pg-promise').errors
 
-const errors = require('error.toml')
+const toml = require('utils/toml')
+
+const errors = toml.parseFile('error.toml')
 
 const inProduction = process.env.NODE_ENV === 'production'
 
