@@ -1,6 +1,4 @@
-DROP SCHEMA IF EXISTS public CASCADE;
-CREATE SCHEMA public;
-
+-- +migrate Up
 CREATE TABLE "user" (
   id SERIAL,
   email VARCHAR(254) NOT NULL,
