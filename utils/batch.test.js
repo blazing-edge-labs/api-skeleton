@@ -13,10 +13,10 @@ test('createLoader', async t => {
     return keys.map(x => -x)
   }
 
-  const loader = createLoader(batchResolver, { batchMaxSize: 5 })
+  const load = createLoader(batchResolver, { batchMaxSize: 5 })
 
   const inputs = [1, 2, 3, 4, 5, 6, 7, 2, 8, 9]
-  const promises = inputs.map(loader)
+  const promises = inputs.map(load)
 
   t.is(promises.length, inputs.length)
   t.is(_.uniq(promises).length, _.uniq(inputs).length)
@@ -28,7 +28,7 @@ test('createLoader', async t => {
   t.deepEqual(resolverKeys, [[1, 2, 3, 4, 5], [6, 7, 8, 9]])
   t.deepEqual(results, [-1, -2, -3, -4, -5, -6, -7, -2, -8, -9])
 
-  const promise1 = loader(1)
+  const promise1 = load(1)
 
   t.is(await promise1, -1)
   t.notOk(promise1 === promises[0], 'after resolving, cache is cleared (for same key, new promise is returned)')

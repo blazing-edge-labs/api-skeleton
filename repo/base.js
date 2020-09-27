@@ -36,17 +36,17 @@ function mapper (mapping) {
   return map
 }
 
-function createLoaderT (batchResolverT, { batchMaxSize = 1000 } = {}) {
-  assert(batchResolverT.length === 1, 'batchResolver creator must be a function with single argument')
-  return memoRefIn(new WeakMap(), t => createLoader(batchResolverT(t), { batchMaxSize }))
+function loader (batchResolverWith, { batchMaxSize = 1000 } = {}) {
+  assert(batchResolverWith.length === 1, 'batchResolver creator must be a function with single argument')
+  return memoRefIn(new WeakMap(), t => createLoader(batchResolverWith(t), { batchMaxSize }))
 }
 
-const createSelectLoaderT = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = identity }) => {
+const selectLoader = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = identity }) => {
   const leftPart = as.format('SELECT * FROM $1~ WHERE $2~ IN', [table, keyColumn])
   const rightPart = where && `AND ${where}`
   const mapItem = map[kMapItem] || map
 
-  return createLoaderT(t => async keys => {
+  return loader(t => async keys => {
     const r = (keys.length === 1 && keys[0] === null)
       ? []
       : await t.any(`${leftPart} (${as.csv(keys)}) ${rightPart}`)
@@ -64,10 +64,10 @@ const createSelectLoaderT = ({ multi }) => ({ from: table, by: keyColumn, where 
   })
 }
 
-createLoaderT.selectOne = createSelectLoaderT({ multi: false })
-createLoaderT.selectAll = createSelectLoaderT({ multi: true })
+loader.selectOne = selectLoader({ multi: false })
+loader.selectAll = selectLoader({ multi: true })
 
 module.exports = {
   mapper,
-  createLoaderT,
+  loader,
 }
