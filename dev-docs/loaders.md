@@ -1,7 +1,7 @@
 # Quick Introduction to `loader`
 
 If you are new to the concept of DataLoaders, you can refer to https://github.com/graphql/dataloader.
-We use same concept of batched loading and implemented it with an more functional API.
+We use the same concept of batched loading and implemented it with a more functional API.
 
 ## Example
 
@@ -27,8 +27,8 @@ Now, let's say there are tables "order" and "product". In `repo/order.js` there 
 
 ```js
 const {all, asyncAssign} = require('utils/promise')
-const {userRepo} = require('repo/user')
-const {productRepo} = require('repo/product')
+const userRepo = require('repo/user')
+const productRepo = require('repo/product')
 
 // ... map, ...
 
@@ -42,7 +42,7 @@ async function list ({ limit = 10, includeUsers = false }) {
 
   const loadUserById = userRepo.loadByIdWith(db)
   const loadRolesByUserId = userRepo.loadRolesByUserIdWith(db)
-  const loadProductsByOrderId = productRepo.loadProductsByOrderIdWith(db)
+  const loadProductsByOrderId = productRepo.loadByOrderIdWith(db)
 
   const loadUserWithRoles = async userId => {
     const [user, roles] = await Promise.all([
