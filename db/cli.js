@@ -1,10 +1,12 @@
+// should only be ran through package.json scripts
+
 const argv = require('mri')(process.argv.slice(2), {
   boolean: true,
   stopEarly: true,
 })
 const migratio = require('migratio')
 
-const { db, sql, pgp } = require('db')
+const { pgpDB: db, sql, pgp } = require('db')
 
 const command = argv._[0]
 
@@ -14,13 +16,13 @@ async function run () {
     case 'down':
     case 'current':
       return migratio[command]({
-        directory: 'migration',
+        directory: 'db/migration',
         tableName: 'migration',
         verbose: true,
         revision: argv.r,
       })
-    case 'recreate':
-      return db.query(sql('schema'))
+    case 'drop':
+      return db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;')
     case 'seed':
       return db.tx(t => {
         return t.query(sql('seed'))

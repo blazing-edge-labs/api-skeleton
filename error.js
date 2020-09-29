@@ -3,7 +3,9 @@ const _ = require('lodash')
 const assert = require('assert')
 const { QueryFileError, QueryResultError, queryResultErrorCode } = require('pg-promise').errors
 
-const errors = require('error.toml')
+const toml = require('utils/toml')
+
+const errors = toml.parseFile('error.toml')
 
 const inProduction = process.env.NODE_ENV === 'production'
 
@@ -56,22 +58,14 @@ function error (ec, cause, status) {
 }
 
 function dbErrorHandler (mapping = {}) {
-  if (mapping instanceof DatabaseError) {
-    throw mapping
-  }
-  if (mapping instanceof Error) {
-    throw error('db.internal', mapping)
-  }
-
   if (!inProduction) {
     _.keys(mapping).forEach(checkDBErrorMappingKey)
     _.values(mapping).filter(_.isString).forEach(getCode)
   }
 
-  return cause => {
-    if (cause instanceof DatabaseError) {
-      throw cause
-    }
+  return err => {
+    let cause = err
+    while (cause instanceof DatabaseError) cause = cause.nested
 
     const key = cause instanceof QueryResultError
       ? queryResultErrorName[cause.code]
@@ -79,11 +73,13 @@ function dbErrorHandler (mapping = {}) {
 
     const handle = key && mapping[key]
 
-    if (_.isFunction(handle)) {
+    if (!handle) throw err
+
+    if (typeof handle === 'function') {
       return handle(cause)
     }
 
-    throw error(handle || 'db.internal', cause)
+    throw error(handle, cause)
   }
 }
 

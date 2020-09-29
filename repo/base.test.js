@@ -1,147 +1,80 @@
 const test = require('test')
-const { db, helper } = require('db')
-const { mapper, createResolver } = require('repo/base')
+const { all } = require('utils/promise')
+const { mapper, loader } = require('./base')
+const { db } = require('db')
 
-function callCounter (fun) {
-  const f = function () {
-    f.callCount++
-    return fun.apply(this, arguments)
-  }
-  f.callCount = 0
-  return f
-}
-
-test('map.loading', async t => {
-  // A -> (B+, C+ -> B)
-
+test('loader', async t => {
   await db.query(`
-    CREATE TABLE "test_A" (
-      id serial,
-      label text,
-      primary key (id)
+    CREATE TABLE test_loader (
+      id int,
+      group_num int
     );
-    INSERT INTO "test_A" (label) VALUES ('A1'),('A2'),('A3');
-
-    CREATE TABLE "test_B" (
-      id serial,
-      a_id int references "test_A" (id),
-      label text,
-      primary key (id)
-    );
-    INSERT INTO "test_B" (label, a_id) VALUES ('B1', 1),('B2', 1),('B3', 2);
-
-    CREATE TABLE "test_C" (
-      id serial,
-      a_id int references "test_A" (id),
-      b_id int references "test_B" (id),
-      label text,
-      primary key (id)
-    );
-    INSERT INTO "test_C" (label, a_id, b_id) VALUES
-    ('C1', 1, 1),
-    ('C2', 1, 2),
-    ('C3', 2, 3);
+    INSERT INTO test_loader (id, group_num) VALUES
+    (1, 1),
+    (2, 1),
+    (3, 1),
+    (4, 1),
+    (5, 1),
+    (6, 2),
+    (7, 2),
+    (8, 3);
   `)
 
-  const mapB = mapper({
-    label: 'label',
-  })
-  const bResolver = createResolver('test_B', 'id', { map: mapB })
-  const bOfAResolver = createResolver('test_B', 'a_id', { map: mapB, multi: true })
-
-  const mapC = mapper({
-    label: 'label',
-    b: ['b_id', bResolver],
-  })
-  const cOfAResolver = createResolver('test_C', 'a_id', { map: mapC, multi: true })
-
-  const mapA = mapper({
-    label: 'label',
-    b: ['id', bOfAResolver],
-    c: ['id', cOfAResolver],
+  const map = mapper({
+    id: 'id',
+    group: 'group_num',
   })
 
-  const dbSpy = { ...db }
-  dbSpy.any = callCounter(db.any)
+  const loadByIdWith = loader.selectOne({ from: 'test_loader', by: 'id', map })
+  const loadByGroupWith = loader.selectAll({ from: 'test_loader', by: 'group_num', where: '"id" > 5 ORDER BY "id" DESC', map })
 
-  const r = await db.any('SELECT * FROM "test_A"')
-  .then(mapA.loading({
-    b: {},
-    c: {
-      b: {},
-    },
-  }, { t: dbSpy }))
+  const loadById = loadByIdWith(db)
+  const promise = loadById(8)
+  t.ok(promise === Promise.resolve(promise), 'loader returns a promise')
+  t.ok(promise === loadById(8), 'loader should cache by key')
+  t.ok(loadById === loadByIdWith(db), 'for same DB, loaderWith should return same loader')
+  t.deepEqual(await promise, { id: 8, group: 3 })
+  const promise2 = loadById(8)
+  t.ok(promise !== promise2, 'after loading, it should not be cached any more')
 
-  t.is(dbSpy.any.callCount, 3)
-
-  t.deepEqual(r, [
-    {
-      label: 'A1',
-      b: [
-        {
-          label: 'B1',
-        },
-        {
-          label: 'B2',
-        },
-      ],
-      c: [
-        {
-          label: 'C1',
-          b: {
-            label: 'B1',
-          },
-        },
-        {
-          label: 'C2',
-          b: {
-            label: 'B2',
-          },
-        },
-      ],
-    },
-    {
-      label: 'A2',
-      b: [
-        {
-          label: 'B3',
-        },
-      ],
-      c: [
-        {
-          label: 'C3',
-          b: {
-            label: 'B3',
-          },
-        },
-      ],
-    },
-    {
-      label: 'A3',
-      b: [],
-      c: [],
-    },
+  const loadByGroup = loadByGroupWith(db)
+  t.ok(loadByGroup === loadByGroupWith(db), 'for same DB, loaderWith should return same loader')
+  t.deepEqual((await loadByGroup(2)).sort((a, b) => a.id - b.id), [
+    { id: 6, group: 2 },
+    { id: 7, group: 2 },
   ])
 
-  {
-    const data = Array(400 - 3).fill({ label: 'AA' })
-    const columnSet = new helper.ColumnSet(['label'])
-    await db.query(helper.insert(data, columnSet, 'test_A'))
+  await db.tx(async tx => {
+    const txLoadById = loadByIdWith(tx)
 
-    dbSpy.any.callCount = 0
+    t.ok(txLoadById !== loadById, 'loaderWith for different t should return different loader')
 
-    const a = await db.any('SELECT * FROM "test_A"')
-    .then(mapA.loading({ c: { b: {} } }, { t: dbSpy }))
+    const promise3 = txLoadById(8)
+    t.ok(promise3 !== promise2, 'loader cache should differ for different t')
+    t.ok(txLoadById === loadByIdWith(tx), 'for same tx, loaderWith should return same loader')
+    t.deepEqual(await promise3, { id: 8, group: 3 })
+    const promise4 = txLoadById(8)
+    t.ok(promise3 !== promise4, 'after loading, it should not be cached any more')
+    await promise4
 
-    t.is(a.length, 400)
-    t.is(dbSpy.any.callCount, 3, 'auto chunk')
-    t.is(a.map(r => r.c.length).filter(Boolean).length, 2)
-    t.notOk(a[0].b, 'a.b not loaded')
-  }
+    t.deepEqual(await all([1, 7, 3, 5], txLoadById), [
+      { id: 1, group: 1 },
+      { id: 7, group: 2 },
+      { id: 3, group: 1 },
+      { id: 5, group: 1 },
+    ])
 
-  await db.query(`
-    DROP TABLE "test_C";
-    DROP TABLE "test_B";
-    DROP TABLE "test_A";
-  `)
+    t.deepEqual(await all([1, 2, 3], loadByGroupWith(tx)), [
+      [],
+      [
+        { id: 7, group: 2 },
+        { id: 6, group: 2 },
+      ],
+      [
+        { id: 8, group: 3 },
+      ],
+    ])
+  })
+
+  await db.query('DROP TABLE test_loader')
 })

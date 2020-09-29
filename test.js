@@ -57,7 +57,7 @@ async function auth (email, password) {
   if (!cache.has(key)) {
     if (password) {
       const r = await request.post('/auth').send({ email, password })
-      const token = _.get(r, 'body.data.token')
+      const { token } = r.body
       assert(token, 'error getting token in test auth helper')
       cache.set(key, token)
     } else {
