@@ -5291,19 +5291,6 @@ toidentifier@1.0.0:
   resolved "https://registry.yarnpkg.com/toidentifier/-/toidentifier-1.0.0.tgz#7e1be3470f1e77948bc43d94a3c8f4d7752ba553"
   integrity sha512-yaOH/Pk/VEhBWWTlhI+qXxDFXlejDGcQipMlyxda9nthulaxLZUNcUqFxokp0vcYnvteJln5FNQDRrxj3YcbVw==
 
-toml-require@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/toml-require/-/toml-require-1.2.0.tgz#2ee313370d8853ef98af3d47d2eddc56c4ca1793"
-  integrity sha512-7XN/4Yhii8wxQZxtVMAcghXhlIWgn951kKaYfDiYfEWJd62XOAX6lRWAH2Dvy1vmCo4FML00U8f5oX9g7Hjznw==
-  dependencies:
-    semver "^5.6.0"
-    toml ">=2.0.2"
-
-toml@>=2.0.2:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/toml/-/toml-3.0.0.tgz#342160f1af1904ec9d204d03a5d61222d762c5ee"
-  integrity sha512-y/mWCZinnvxjTKYhJ+pYxwD0mRLVvOtdS2Awbgxln6iEnt4rk0yBxeSBHkGJcPucRiG0e55mwWp+g/05rsrd6w==
-
 traverse@0.6.x:
   version "0.6.6"
   resolved "https://registry.yarnpkg.com/traverse/-/traverse-0.6.6.tgz#cbdf560fd7b9af632502fed40f918c157ea97137"
