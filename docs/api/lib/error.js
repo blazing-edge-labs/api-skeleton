@@ -2,11 +2,12 @@ const _ = require('lodash')
 
 const error = require('error')
 
-const getValidationErrorSchemaByKey = validationKey => ({
+const getValidationErrorSchemaByKey = (validationKey, description) => ({
   type: 'object',
   properties: {
     error: {
       type: 'string',
+      description
     },
     code: {
       type: 'integer',
@@ -106,7 +107,10 @@ function formatErrorsWithTomlErrors (errorConstantObjs) {
     const [model, errorConstant] = errorConstantObj.error.split('.')
 
     if (model === '_validation') {
-      errorResponses[errorConstantObj.status].push(getValidationErrorSchemaByKey(errorConstant))
+      errorResponses[errorConstantObj.status].push(getValidationErrorSchemaByKey(
+        errorConstant,
+        'http.bad_request'
+      ))
       return
     }
 
