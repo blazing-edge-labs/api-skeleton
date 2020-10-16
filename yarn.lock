@@ -2676,12 +2676,12 @@ istanbul-reports@^3.0.2:
     html-escaper "^2.0.0"
     istanbul-lib-report "^3.0.0"
 
-joi-to-swagger@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/joi-to-swagger/-/joi-to-swagger-4.0.0.tgz#2ae5c23be75417c1050134212d3adeefdcbae373"
-  integrity sha512-GmFoLU9loBRMwieoneOzN3FLn8YRAFq8/gNTIBtvFHEIGl/02YwtprSzGGn4FfJ1QBdafPvx90UkFaKq6TozAA==
+joi-to-swagger@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/joi-to-swagger/-/joi-to-swagger-5.0.1.tgz#b50ff3145bc7b9a4a224dd22a4fceea03ca6dd1a"
+  integrity sha512-PPFoQJuO1hbcYVDjewXErgbmWBstgAnuLK+cAAb7uloWibEAwLn85s6k17n8C8/AOlNnMTfw74Uc0zF57EAk7Q==
   dependencies:
-    lodash "^4.17.15"
+    lodash "^4.17.19"
 
 joi@^17.2.1:
   version "17.2.1"
