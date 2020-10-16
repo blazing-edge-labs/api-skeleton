@@ -9,12 +9,12 @@
     "url": "https://github.com/blazing-edge-labs/api-skeleton"
   },
   "dependencies": {
-    "@hapi/joi": "^17.1.1",
     "@iarna/toml": "^2.2.5",
     "bcryptjs": "^2.4.3",
     "connection-string": "^3.2.0",
     "crypto-random-string": "^3.2.0",
     "dotenv-safe": "^8.2.0",
+    "joi": "^17.2.1",
     "jsonwebtoken": "^8.5.1",
     "kcors": "^2.2.2",
     "koa": "^2.11.0",
