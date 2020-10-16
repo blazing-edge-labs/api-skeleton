@@ -1,5 +1,5 @@
 const _ = require('lodash')
-const joi = require('@hapi/joi')
+const joi = require('joi')
 
 const docsLib = require('docs/api/lib')
 const error = require('error')
