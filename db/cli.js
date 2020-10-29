@@ -20,6 +20,7 @@ async function run () {
         tableName: 'migration',
         verbose: true,
         revision: argv.r,
+        db,
       })
     case 'drop':
       return db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;')
