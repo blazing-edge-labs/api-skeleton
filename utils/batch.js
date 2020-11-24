@@ -4,6 +4,7 @@ const defaultScheduler = job => Promise.resolve(job).then(process.nextTick)
 
 function createLoader (batchResolver, { batchMaxSize = 1000, cache = new Map(), autoClearCache = !!cache, schedule = defaultScheduler } = {}) {
   let queued = []
+  let nextKey
 
   const flush = () => {
     const batch = queued
@@ -32,12 +33,16 @@ function createLoader (batchResolver, { batchMaxSize = 1000, cache = new Map(), 
     }
   }
 
+  const pushResolver = resolve => {
+    if (queued.push({ key: nextKey, resolve }) === 1) {
+      schedule(flush)
+    }
+    nextKey = undefined
+  }
+
   const batch = key => {
-    return new Promise(resolve => {
-      if (queued.push({ key, resolve }) === 1) {
-        schedule(flush)
-      }
-    })
+    nextKey = key
+    return new Promise(pushResolver)
   }
 
   return cache
