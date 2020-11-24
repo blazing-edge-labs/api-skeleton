@@ -26,7 +26,7 @@ const loadRolesByUserIdWith = loader.selectAll({
 Now, let's say there are tables "order" and "product". In `repo/order.js` there could be a `list` function.
 
 ```js
-const {all, asyncAssign} = require('utils/promise')
+const {asyncMap, asyncAssign} = require('utils/promise')
 const userRepo = require('repo/user')
 const productRepo = require('repo/product')
 
@@ -53,7 +53,7 @@ async function list ({ limit = 10, includeUsers = false }) {
     return user
   }
 
-  return all(orders, order => {
+  return asyncMap(orders, order => {
     return asyncAssign(order, {
       user: includeUsers ? loadUserWithRoles(order.userId) : undefined,
       products: loadProductsByOrderId(order.id)

@@ -1,5 +1,5 @@
 const test = require('test')
-const { all } = require('utils/promise')
+const { asyncMap } = require('utils/promise')
 const { mapper, loader } = require('./base')
 const { db } = require('db')
 
@@ -57,14 +57,14 @@ test('loader', async t => {
     t.ok(promise3 !== promise4, 'after loading, it should not be cached any more')
     await promise4
 
-    t.deepEqual(await all([1, 7, 3, 5], txLoadById), [
+    t.deepEqual(await asyncMap([1, 7, 3, 5], txLoadById), [
       { id: 1, group: 1 },
       { id: 7, group: 2 },
       { id: 3, group: 1 },
       { id: 5, group: 1 },
     ])
 
-    t.deepEqual(await all([1, 2, 3], loadByGroupWith(tx)), [
+    t.deepEqual(await asyncMap([1, 2, 3], loadByGroupWith(tx)), [
       [],
       [
         { id: 7, group: 2 },
