@@ -7,10 +7,7 @@ const { as } = require('db').pgp
 const kMapItem = Symbol('mapItem')
 
 function mapper (mapping) {
-  const props = [
-    ...Object.getOwnPropertyNames(mapping),
-    ...Object.getOwnPropertySymbols(mapping),
-  ]
+  const props = Reflect.ownKeys(mapping)
   .map(key => {
     const val = mapping[key]
     const isFn = typeof val === 'function'
