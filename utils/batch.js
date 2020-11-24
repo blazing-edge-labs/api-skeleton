@@ -2,7 +2,7 @@ const { memoRefIn } = require('utils/data')
 
 const defaultScheduler = job => Promise.resolve(job).then(process.nextTick)
 
-function createBatcher (batchResolver, { batchMaxSize = Infinity, cache = null, autoClearCache = false, schedule = defaultScheduler } = {}) {
+function createLoader (batchResolver, { batchMaxSize = 1000, cache = new Map(), autoClearCache = !!cache, schedule = defaultScheduler } = {}) {
   let queued = []
 
   const flush = () => {
@@ -24,7 +24,7 @@ function createBatcher (batchResolver, { batchMaxSize = Infinity, cache = null, 
 
   const processBatch = async (batch) => {
     try {
-      const results = await batchResolver(batch.map(it => it.input))
+      const results = await batchResolver(batch.map(it => it.key))
       batch.forEach((it, i) => it.resolve(results[i]))
     } catch (error) {
       const rejection = Promise.reject(error)
@@ -32,9 +32,9 @@ function createBatcher (batchResolver, { batchMaxSize = Infinity, cache = null, 
     }
   }
 
-  const batch = input => {
+  const batch = key => {
     return new Promise(resolve => {
-      if (queued.push({ input, resolve }) === 1) {
+      if (queued.push({ key, resolve }) === 1) {
         schedule(flush)
       }
     })
@@ -45,11 +45,6 @@ function createBatcher (batchResolver, { batchMaxSize = Infinity, cache = null, 
     : batch
 }
 
-function createLoader (batchResolver, { batchMaxSize = 1000, cache = new Map(), autoClearCache = !!cache, schedule = defaultScheduler } = {}) {
-  return createBatcher(batchResolver, { batchMaxSize, cache, autoClearCache, schedule })
-}
-
 module.exports = {
-  createBatcher,
   createLoader,
 }
