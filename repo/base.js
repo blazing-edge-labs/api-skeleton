@@ -2,7 +2,7 @@ const assert = require('assert')
 
 const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
-const { as } = require('db').pgp
+const { sql } = require('db')
 
 const kMapItem = Symbol('mapItem')
 
@@ -39,14 +39,14 @@ function loader (batchResolverWith, { batchMaxSize = 1000 } = {}) {
 }
 
 const selectLoader = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = identity }) => {
-  const leftPart = as.format('SELECT * FROM $1~ WHERE $2~ IN', [table, keyColumn])
-  const rightPart = where && `AND ${where}`
+  const leftPart = sql`SELECT * FROM ${sql.I(table)} WHERE ${sql.I(keyColumn)} IN`
+  const rightPart = sql.__raw__(where && `AND ${where}`)
   const mapItem = map[kMapItem] || map
 
   return loader(t => async keys => {
     const r = (keys.length === 1 && keys[0] === null)
       ? []
-      : await t.any(`${leftPart} (${as.csv(keys)}) ${rightPart}`)
+      : await t.any`${leftPart} (${sql.csv(keys)}) ${rightPart}`
 
     // Minor optimization for single key case
     if (keys.length === 1) {

@@ -1,19 +1,13 @@
 const NestedError = require('nested-error-stacks')
 const _ = require('lodash')
 const assert = require('assert')
-const { QueryFileError, QueryResultError, queryResultErrorCode } = require('pg-promise').errors
 
 const toml = require('utils/toml')
 
 const errors = toml.parseFile('error.toml')
+const { QueryResultError } = require('db/lib/db')
 
 const inProduction = process.env.NODE_ENV === 'production'
-
-// queryResultErrorCode:
-//   noData: int
-//   multiple: int
-//   notEmpty: int
-const queryResultErrorName = _.invert(queryResultErrorCode)
 
 function getCode (ec) {
   const code = _.get(errors, ec)
@@ -22,7 +16,7 @@ function getCode (ec) {
 }
 
 function checkDBErrorMappingKey (key) {
-  if (!key.includes('_') && !(key in queryResultErrorCode)) {
+  if (!key.includes('_') && !(key in QueryResultError.code)) {
     throw new TypeError(`invalid dbErrorHandler mapping key: ${key}`)
   }
 }
@@ -68,7 +62,7 @@ function dbErrorHandler (mapping = {}) {
     while (cause instanceof DatabaseError) cause = cause.nested
 
     const key = cause instanceof QueryResultError
-      ? queryResultErrorName[cause.code]
+      ? cause.what
       : cause.constraint
 
     const handle = key && mapping[key]
@@ -90,8 +84,7 @@ error.AssertionError = assert.AssertionError
 error.DatabaseError = DatabaseError
 error.GenericError = GenericError
 error.HttpError = HttpError
-error.QueryFileError = QueryFileError
-error.QueryResultError = QueryResultError
 error.ValidationError = ValidationError
+error.QueryResultError = QueryResultError
 
 module.exports = error

@@ -4,7 +4,7 @@ const pgp = require('pg-promise')({
 })
 
 const error = require('error')
-const { wrapDatabase } = require('utils/pgp-wrappers')
+const { Database, sql } = require('db/lib')
 
 /// PG stuff
 
@@ -16,32 +16,16 @@ pgp.pg.types.setTypeParser(DATE_OID, v => v)
 
 const pgpDB = pgp(process.env.DATABASE_URL)
 
-const db = wrapDatabase(pgpDB, {
+const db = new Database(pgpDB.$pool, {
   queryErrorHandler: e => {
     throw error('db.query', e)
   },
 })
 
-/// sql(file)
-
-const queryFiles = new Map()
-
-function sql (filename) {
-  if (!queryFiles.has(filename) || process.env.NODE_ENV === 'development') {
-    queryFiles.set(filename, new pgp.QueryFile(`${filename}.sql`, {
-      compress: process.env.NODE_ENV === 'production',
-      debug: process.env.NODE_ENV === 'development',
-    }))
-  }
-
-  return queryFiles.get(filename)
-}
-
 module.exports = {
   db,
+  sql,
   pgpDB,
   helper: pgp.helpers,
   pgp,
-  sql,
-  util: pgp.utils,
 }

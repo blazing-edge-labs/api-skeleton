@@ -27,11 +27,10 @@ async function checkPasswordWithHash (password, hash) {
 }
 
 async function checkPassword (id, password) {
-  const r = await db.one(`
+  const r = await db.one`
     SELECT password
     FROM "user"
-    WHERE id = $1
-  `, [id])
+    WHERE id = ${id}`
   .catch(error.db({
     noData: 'user.not_found',
   }))
@@ -40,48 +39,43 @@ async function checkPassword (id, password) {
 }
 
 async function create (email, password) {
+  const hashedPassword = password ? await hashPassword(password) : null
+
   return db.tx(async function (t) {
-    const user = await t.one(`
+    const user = await t.one`
       INSERT INTO
         "user" (email, password)
-        VALUES ($[email], $[password])
+        VALUES (${email}, ${hashedPassword})
         RETURNING id
-    `, {
-      email,
-      password: password ? await hashPassword(password) : null,
-    })
+    `
     .catch(error.db({
       user_email_key: 'user.duplicate',
     }))
 
-    await t.none(`
-      INSERT INTO
-        user_role (user_id, role)
-        VALUES ($[id], $[role])
-    `, {
-      id: user.id,
-      role: konst.roleUser.none,
-    })
+    await t.none`
+      INSERT INTO user_role (user_id, role)
+      VALUES (${user.id}, ${konst.roleUser.none})
+    `
 
     return user
   })
 }
 
 async function updatePassword (id, password) {
-  await db.none(`
+  await db.query`
     UPDATE "user"
-    SET password = $2
-    WHERE id = $1
-  `, [id, await hashPassword(password)])
+    SET password = ${await hashPassword(password)}
+    WHERE id = ${id}
+  `
 }
 
 async function updateEmail (id, email) {
-  return db.one(`
+  return db.one`
     UPDATE "user"
-    SET email = $2
-    WHERE id = $1
+    SET email = ${email}
+    WHERE id = ${id}
     RETURNING *
-  `, [id, email])
+  `
   .catch(error.db({
     user_email_key: 'user.duplicate',
   }))
@@ -89,21 +83,21 @@ async function updateEmail (id, email) {
 }
 
 async function getById (id) {
-  return db.one(`
+  return db.one`
     SELECT *
     FROM "user"
-    WHERE id = $1
-  `, [id])
+    WHERE id = ${id}
+  `
   .catch(error.db({ noData: 'user.not_found' }))
   .then(map)
 }
 
 async function getByIdPassword (id, password) {
-  const rawUser = await db.one(`
+  const rawUser = await db.one`
     SELECT *
     FROM "user"
-    WHERE id = $1
-  `, [id])
+    WHERE id = ${id}
+  `
   .catch(error.db({
     noData: 'user.not_found',
   }))
@@ -112,30 +106,30 @@ async function getByIdPassword (id, password) {
 }
 
 async function getByEmail (email) {
-  return db.one(`
+  return db.one`
     SELECT *
     FROM "user"
-    WHERE email = $1
-  `, [email])
+    WHERE email = ${email}
+  `
   .catch(error.db({ noData: 'user.not_found' }))
   .then(map)
 }
 
 async function getByEmailSilent (email) {
-  return db.oneOrNone(`
+  return db.oneOrNone`
     SELECT *
     FROM "user"
-    WHERE email = $1
-  `, [email])
+    WHERE email = ${email}
+  `
   .then(map)
 }
 
 async function getByEmailPassword (email, password) {
-  const rawUser = await db.one(`
+  const rawUser = await db.one`
     SELECT *
     FROM "user"
-    WHERE email = $1
-  `, [email])
+    WHERE email = ${email}
+  `
   .catch(error.db({
     noData: 'user.not_found',
   }))
@@ -144,22 +138,21 @@ async function getByEmailPassword (email, password) {
 }
 
 async function getRoleById (id) {
-  const r = await db.oneOrNone(`
+  const r = await db.oneOrNone`
     SELECT role
     FROM user_role
-    WHERE user_id = $[id]
-  `, { id })
-
+    WHERE user_id = ${id}
+  `
   return r ? r.role : konst.roleUser.none
 }
 
 async function setRoleById (id, role) {
-  await db.one(`
+  await db.one`
     UPDATE user_role
-    SET role = $[role]
-    WHERE user_id = $[id]
+    SET role = ${role}
+    WHERE user_id = ${id}
     RETURNING *
-  `, { id, role })
+  `
   .catch(error.db({
     noData: 'user.not_found',
   }))

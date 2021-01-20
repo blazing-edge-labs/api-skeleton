@@ -6,7 +6,7 @@ const argv = require('mri')(process.argv.slice(2), {
 })
 const migratio = require('migratio')
 
-const { pgpDB: db, sql, pgp } = require('db')
+const { pgpDB: db, pgp } = require('db')
 
 const command = argv._[0]
 
@@ -24,10 +24,12 @@ async function run () {
       })
     case 'drop':
       return db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;')
-    case 'seed':
+    case 'seed': {
+      const queryFile = new pgp.QueryFile('seed.sql')
       return db.tx(t => {
-        return t.query(sql('seed'))
+        return t.query(queryFile)
       })
+    }
     default:
       throw new Error(`"${command}" is not a valid migration command`)
   }
