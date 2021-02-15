@@ -108,7 +108,7 @@ class Task extends Database {
       }
 
       while (this._pending !== -1 && this._queue.size) {
-        if (this._pending > 0 && this._queue.peek().method === this._runTask) {
+        if (this._pending > 0 && this._queue.peek().exclusive) {
           break
         }
 
@@ -119,8 +119,11 @@ class Task extends Database {
   }
 
   _pushMethodCall (method, ...args) {
+    if (this._opts.debug) {
+      method = bindAsyncCallStack(method, method)
+    }
     return new Promise(resolve => {
-      this._queue.push({ resolve, method, args })
+      this._queue.push({ resolve, method, args, exclusive: this._pending > 0 })
     })
   }
 
@@ -205,6 +208,25 @@ class Task extends Database {
         )
         --this._txLevel
       }
+    }
+  }
+}
+
+function bindAsyncCallStack (fn, toFn, header = 'After:') {
+  const fakeError = {}
+  Error.captureStackTrace(fakeError, toFn || bindAsyncCallStack)
+
+  return async function (...args) {
+    try {
+      return await fn.apply(this, args)
+    } catch (e) {
+      if (e instanceof Error) {
+        Object.defineProperty(e, 'stack', {
+          value: `${e.stack}\n${header}\n${fakeError.stack.replace(/^.*?\n/, '')}`,
+          configurable: true,
+        })
+      }
+      throw e
     }
   }
 }

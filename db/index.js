@@ -20,6 +20,7 @@ const db = new Database(pgpDB.$pool, {
   queryErrorHandler: e => {
     throw error('db.query', e)
   },
+  debug: process.env.NODE_ENV === 'development',
 })
 
 module.exports = {
