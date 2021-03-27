@@ -62,6 +62,27 @@ async function list ({ limit = 10, includeUsers = false }) {
 }
 ```
 
+## Loader auto-memoization
+
+Loaders are memoized to ensure batching is not limited to local use.
+
+That means that
+
+```js
+async function getFullName (userId) {
+  const user = await userRepo.loadByIdWith(db)(userId)
+  return `${user.firstName} ${user.lastName}`
+}
+
+// -- somewhere else --
+
+const fullNames = asyncMap(userIds, getFullName)
+```
+
+will still batch loading of all users in single query, since multiple `userRepo.loadByIdWith(db)` calls will return same loader.
+
+However separating loader preparation form its use, can make things more readable and slightly more efficient.
+
 ## Loading by custom expression
 
 Sometimes we need to load by normalized keys, or column, or both.
