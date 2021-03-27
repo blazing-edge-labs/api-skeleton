@@ -114,11 +114,13 @@ await db.tx(async t => {
 You can also specify locking to ensure data is not changed concurrently by another transaction during your update.
 
 ```js
-await db.tx(async t => {
-  const user = await userRepo.loadByIdWith(t, 'FOR UPDATE')(userId)
+async function distributeMonyEqually (userIds) {
+  const users = await asyncMap(usersIds, userRepo.loadByIdWith(t, 'FOR UPDATE'))
 
-  const newBalance = calculateNewBalance(user.balance)
+  const totBalance = users.reduce((sum, user) => sum + user.balance, 0)
+  const newBalance = totBalance / users.length
 
-  await userRepo.updateBalance(userId, newBalance, {db: t})
-})
+  await userRepo.updateBalanceToUsers(usersIds, newBalance, {db: t})
+}
+
 ```
