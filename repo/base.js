@@ -39,7 +39,7 @@ const asIdentifier = x => as.csv([x])
 
 const kForUpdate = Symbol('FOR UPDATE')
 
-const _loader = ({ multi }) => ({ from, by, where = '', map = identity }) => {
+const _loader = ({ multi }) => ({ from, by, where = '', orderBy = '', map = identity }) => {
   const useJoin = /\b_key\b/.test(by)
   const keyName = useJoin ? '_key' : by
   const table = as.name(from)
@@ -47,7 +47,7 @@ const _loader = ({ multi }) => ({ from, by, where = '', map = identity }) => {
   const mapItem = map[kMapItem] || map
 
   return loader((t, mod) => async keys => {
-    const append = (mod && mod[kForUpdate]) ? 'FOR UPDATE' : ''
+    const forUpdate = mod && mod[kForUpdate]
 
     let r
 
@@ -57,7 +57,8 @@ const _loader = ({ multi }) => ({ from, by, where = '', map = identity }) => {
         FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn})
         JOIN ${table} ON (${by})
         ${where && `WHERE ${where}`}
-        ${append}
+        ${orderBy && `ORDER BY ${orderBy}`}
+        ${forUpdate ? 'FOR UPDATE' : ''}
       `)
     } else if (keys.length === 1 && keys[0] === null) {
       r = []
@@ -66,7 +67,8 @@ const _loader = ({ multi }) => ({ from, by, where = '', map = identity }) => {
         SELECT * FROM ${table}
         WHERE ${keyColumn} IN (${as.csv(keys)})
         ${where && `AND (${where})`}
-        ${append}
+        ${orderBy && `ORDER BY ${orderBy}`}
+        ${forUpdate ? 'FOR UPDATE' : ''}
       `)
     }
 
