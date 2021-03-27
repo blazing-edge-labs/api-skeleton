@@ -59,5 +59,66 @@ async function list ({ limit = 10, includeUsers = false }) {
       products: loadProductsByOrderId(order.id)
     })
   })
-} 
+}
+```
+
+## Loading by custom expression
+
+Sometimes we need to load by normalized keys, or column, or both.
+
+For example, let's say users in your project should be able to login by entering own email address in any case.
+
+One solution could be to store lowered emails in a separate column. It's always recommended to also keep email addresses in original case, since some could be case-sensitive and sending messages to only lowered addresses could be security issue.
+
+Maintaining two versions of an address is cumbersome, tho.
+
+Instead of adding a column, we can create an index like:
+
+```SQL
+CREATE UNIQUE INDEX user_lower_email_idx ON "user" ((lower("email")));
+```
+
+Now we would like to have a loader to get a user by lowered email.
+
+With special `__` in your `where` option, you have full flexibility to deal with similar situations:
+
+```js
+// -- in user.repo.js --
+
+const loadByLoginEmailWith = loader.one({ from: "user", where: `lower(__) = lower("email")`, map })
+
+
+// -- somewhere else --
+
+const loadUserByLoginEmail = userRepo.loadByLoginEmailWith(db)
+
+const user = await loadUserByLoginEmail('alex.smith@example.com')
+```
+
+Now, not only we have certainty that login emails are unique using the index above, but also our loader will use such index to quickly load users (and auto-batch loading of multiple users in single query.)
+
+## Using Loaders in Transactions
+
+As we already saw, loaders defined using `loader.one` and `loader.all` fist have to be called with a `db` instance.
+
+When in a transaction, we have to pass to loader the Database instance of the transaction/task (usually referred with `t`.)
+
+```js
+await db.tx(async t => {
+  // ...
+
+  const user = await userRepo.loadByIdWith(t)(userId)
+})
+```
+
+You can also specify locking to ensure data is not changed concurrently by another transaction during your update.
+
+```js
+await db.tx(async t => {
+  const user = await userRepo.loadByIdWith(t, 'FOR UPDATE')(userId)
+
+  const newBalance = calculateNewBalance(user.balance)
+
+  await userRepo.updateBalance(userId, newBalance)
+})
 ```
