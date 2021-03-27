@@ -1,6 +1,4 @@
-const assert = require('assert')
-
-const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
+const { byKeyed, byGrouped, memoArgs, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
 const { as } = require('db').pgp
 
@@ -33,20 +31,44 @@ function mapper (mapping) {
   return map
 }
 
-function loader (batchResolverWith, { batchMaxSize = 1000 } = {}) {
-  assert(batchResolverWith.length === 1, 'batchResolver creator must be a function with single argument')
-  return memoRefIn(new WeakMap(), t => createLoader(batchResolverWith(t), { batchMaxSize }))
+function loader (resolveBatchWith, { batchMaxSize = 1000 } = {}) {
+  return memoArgs((...args) => createLoader(resolveBatchWith(...args), { batchMaxSize }))
 }
 
-const _loader = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = identity }) => {
-  const leftPart = as.format('SELECT * FROM $1~ WHERE $2~ IN', [table, keyColumn])
-  const rightPart = where && `AND ${where}`
+const asIdentifier = x => as.csv([x])
+
+const kForUpdate = Symbol('FOR UPDATE')
+
+const _loader = ({ multi }) => ({ from, by, where = '', map = identity }) => {
+  const useJoin = /\b_key\b/.test(by)
+  const keyName = useJoin ? '_key' : by
+  const table = as.name(from)
+  const keyColumn = as.name(keyName)
   const mapItem = map[kMapItem] || map
 
-  return loader(t => async keys => {
-    const r = (keys.length === 1 && keys[0] === null)
-      ? []
-      : await t.any(`${leftPart} (${as.csv(keys)}) ${rightPart}`)
+  return loader((t, mod) => async keys => {
+    const append = (mod && mod[kForUpdate]) ? 'FOR UPDATE' : ''
+
+    let r
+
+    if (useJoin) {
+      r = await t.any(`
+        SELECT *
+        FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn})
+        JOIN ${table} ON (${by})
+        ${where && `WHERE ${where}`}
+        ${append}
+      `)
+    } else if (keys.length === 1 && keys[0] === null) {
+      r = []
+    } else {
+      r = await t.any(`
+        SELECT * FROM ${table}
+        WHERE ${keyColumn} IN (${as.csv(keys)})
+        ${where && `AND (${where})`}
+        ${append}
+      `)
+    }
 
     // Minor optimization for single key case
     if (keys.length === 1) {
@@ -56,11 +78,12 @@ const _loader = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = 
     }
 
     return multi
-      ? keys.map(byGrouped(r, keyColumn, mapItem))
-      : keys.map(byKeyed(r, keyColumn, mapItem, null))
+      ? keys.map(byGrouped(r, keyName, mapItem))
+      : keys.map(byKeyed(r, keyName, mapItem, null))
   })
 }
 
+loader.FOR_UPDATE = { [kForUpdate]: true }
 loader.one = _loader({ multi: false })
 loader.all = _loader({ multi: true })
 

@@ -25,8 +25,10 @@ test('loader', async t => {
     group: 'group_num',
   })
 
+  const cmpId = (a, b) => a.id - b.id
+
   const loadByIdWith = loader.one({ from: 'test_loader', by: 'id', map })
-  const loadByGroupWith = loader.all({ from: 'test_loader', by: 'group_num', where: '"id" > 5 ORDER BY "id" DESC', map })
+  const loadByGroupWith = loader.all({ from: 'test_loader', by: 'group_num', where: '"id" > 5', map })
 
   const loadById = loadByIdWith(db)
   const promise = loadById(8)
@@ -39,7 +41,7 @@ test('loader', async t => {
 
   const loadByGroup = loadByGroupWith(db)
   t.ok(loadByGroup === loadByGroupWith(db), 'for same DB, loaderWith should return same loader')
-  t.deepEqual((await loadByGroup(2)).sort((a, b) => a.id - b.id), [
+  t.deepEqual((await loadByGroup(2)).sort(cmpId), [
     { id: 6, group: 2 },
     { id: 7, group: 2 },
   ])
@@ -64,11 +66,11 @@ test('loader', async t => {
       { id: 5, group: 1 },
     ])
 
-    t.deepEqual(await asyncMap([1, 2, 3], loadByGroupWith(tx)), [
+    t.deepEqual((await asyncMap([1, 2, 3], loadByGroupWith(tx))).sort(cmpId), [
       [],
       [
-        { id: 7, group: 2 },
         { id: 6, group: 2 },
+        { id: 7, group: 2 },
       ],
       [
         { id: 8, group: 3 },
