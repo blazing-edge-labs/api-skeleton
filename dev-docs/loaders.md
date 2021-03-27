@@ -104,7 +104,7 @@ assert(loadFullNameWith(db, ', ') === loadFullNameWith(db), ', ')
 
 Note that arguments are compared by identity.
 
-```
+```js
 assert(myLoader(db, { option1: true }) === myLoader(db, { option1: true })) // FAILS!!!
 ```
 
