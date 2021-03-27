@@ -46,29 +46,27 @@ const _loader = ({ multi }) => ({ from, by, where = '', orderBy = '', map = iden
   const keyColumn = as.name(keyName)
   const mapItem = map[kMapItem] || map
 
-  return loader((t, mod) => async keys => {
-    const forUpdate = mod && mod[kForUpdate]
-
+  return loader((db, mod) => async keys => {
     let r
 
     if (useJoin) {
-      r = await t.any(`
+      r = await db.any(`
         SELECT *
         FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn})
         JOIN ${table} ON (${by})
         ${where && `WHERE ${where}`}
         ${orderBy && `ORDER BY ${orderBy}`}
-        ${forUpdate ? 'FOR UPDATE' : ''}
+        ${mod && mod[kForUpdate] ? 'FOR UPDATE' : ''}
       `)
     } else if (keys.length === 1 && keys[0] === null) {
       r = []
     } else {
-      r = await t.any(`
+      r = await db.any(`
         SELECT * FROM ${table}
         WHERE ${keyColumn} IN (${as.csv(keys)})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
-        ${forUpdate ? 'FOR UPDATE' : ''}
+        ${mod && mod[kForUpdate] ? 'FOR UPDATE' : ''}
       `)
     }
 
