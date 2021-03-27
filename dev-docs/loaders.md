@@ -105,7 +105,10 @@ assert(loadFullNameWith(db, ', ') === loadFullNameWith(db), ', ')
 Note that arguments are compared by identity.
 
 ```js
-assert(myLoader(db, { option1: true }) === myLoader(db, { option1: true })) // FAILS!!!
+const loadA = myLoader(db, { option1: true })
+const loadB = myLoader(db, { option1: true })
+
+console.log(loadA === loadB) // -> false
 ```
 
 ## Loading by custom expression
@@ -129,16 +132,7 @@ Now we would like to have a loader to get a user by lowered email.
 You have full flexibility to deal with similar situations by using `__` (reference to passed key) inside the `where` option.
 
 ```js
-// -- in user.repo.js --
-
 const loadByLoginEmailWith = loader.one({ from: "user", where: `lower(__) = lower("email")`, map })
-
-
-// -- somewhere else --
-
-const loadUserByLoginEmail = userRepo.loadByLoginEmailWith(db)
-
-const user = await loadUserByLoginEmail('alex.smith@example.com')
 ```
 
 Now, not only we have certainty that login emails are unique using the index above, but also our loader will use such index to quickly load users (and auto-batch loading of multiple users in a single query.)
