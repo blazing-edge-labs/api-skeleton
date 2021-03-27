@@ -8,7 +8,7 @@ We use the same concept of batched loading and implemented it with a more functi
 In a repo file like `repo/user.js` we could define a loader to load users by its `id`:
 
 ```js
-const loadByIdWith = loader.selectOne({ from: 'user', by: 'id', map})
+const loadByIdWith = loader.one({ from: 'user', by: 'id', map})
 ```
 
 where `map` is usually the mapper function created with the `mapper` helper.
@@ -16,7 +16,7 @@ where `map` is usually the mapper function created with the `mapper` helper.
 Let's also define a loader for roles:
 
 ```js
-const loadRolesByUserIdWith = loader.selectAll({
+const loadRolesByUserIdWith = loader.all({
   from: 'user_role',
   by: 'user_id',
   map: row => row.role,

@@ -38,7 +38,7 @@ function loader (batchResolverWith, { batchMaxSize = 1000 } = {}) {
   return memoRefIn(new WeakMap(), t => createLoader(batchResolverWith(t), { batchMaxSize }))
 }
 
-const selectLoader = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = identity }) => {
+const _loader = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = identity }) => {
   const leftPart = as.format('SELECT * FROM $1~ WHERE $2~ IN', [table, keyColumn])
   const rightPart = where && `AND ${where}`
   const mapItem = map[kMapItem] || map
@@ -61,8 +61,8 @@ const selectLoader = ({ multi }) => ({ from: table, by: keyColumn, where = '', m
   })
 }
 
-loader.selectOne = selectLoader({ multi: false })
-loader.selectAll = selectLoader({ multi: true })
+loader.one = _loader({ multi: false })
+loader.all = _loader({ multi: true })
 
 module.exports = {
   mapper,

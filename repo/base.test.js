@@ -25,8 +25,8 @@ test('loader', async t => {
     group: 'group_num',
   })
 
-  const loadByIdWith = loader.selectOne({ from: 'test_loader', by: 'id', map })
-  const loadByGroupWith = loader.selectAll({ from: 'test_loader', by: 'group_num', where: '"id" > 5 ORDER BY "id" DESC', map })
+  const loadByIdWith = loader.one({ from: 'test_loader', by: 'id', map })
+  const loadByGroupWith = loader.all({ from: 'test_loader', by: 'group_num', where: '"id" > 5 ORDER BY "id" DESC', map })
 
   const loadById = loadByIdWith(db)
   const promise = loadById(8)
