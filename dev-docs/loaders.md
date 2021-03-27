@@ -115,12 +115,14 @@ You can also specify locking to ensure data is not changed concurrently by anoth
 
 ```js
 async function distributeMonyEqually (userIds) {
-  const users = await asyncMap(usersIds, userRepo.loadByIdWith(t, 'FOR UPDATE'))
-
-  const totBalance = users.reduce((sum, user) => sum + user.balance, 0)
-  const newBalance = totBalance / users.length
-
-  await userRepo.updateBalanceToUsers(usersIds, newBalance, {db: t})
+  await db.tx(async t => {
+    const users = await asyncMap(usersIds, userRepo.loadByIdWith(t, 'FOR UPDATE'))
+  
+    const totBalance = users.reduce((sum, user) => sum + user.balance, 0)
+    const newBalance = totBalance / users.length
+  
+    await userRepo.updateBalanceToUsers(usersIds, newBalance, {db: t})
+  })
 }
 
 ```
