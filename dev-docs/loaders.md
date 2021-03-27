@@ -88,8 +88,8 @@ This is equally true when creating custom loaders with `loader(...)`.
 ```js
 const { byKeyed } = require('utils/data')
 
-const loadFullNameWith = loader((t, sep = ' ') => async userIds => {
-  const rows = await t.any(`
+const loadFullNameWith = loader((db, sep = ' ') => async userIds => {
+  const rows = await db.any(`
     SELECT id, (first_name || $2 || last_name) as "fullName"
     FROM "user"
     WHERE id IN ($1:csv)
@@ -105,7 +105,7 @@ assert(loadFullNameWith(db, ', ') === loadFullNameWith(db), ', ')
 Note that arguments are compared by identity.
 
 ```
-assert(myLoader(db, { option1: true }) === loadFullNameWith(db, { option1: true })) // FAILS!!!
+assert(myLoader(db, { option1: true }) === myLoader(db, { option1: true })) // FAILS!!!
 ```
 
 ## Loading by custom expression
