@@ -1,3 +1,5 @@
+const assert = require('assert')
+
 const { byKeyed, byGrouped, memoArgs, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
 const { as } = require('db').pgp
@@ -39,22 +41,24 @@ const asIdentifier = x => as.csv([x])
 
 const kForUpdate = Symbol('FOR UPDATE')
 
-const _loader = ({ multi }) => ({ from, by, where = '', orderBy = '', map = identity }) => {
-  const useJoin = /\b_key\b/.test(by)
-  const keyName = useJoin ? '_key' : by
+const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity }) => {
+  const keyName = by || '__'
   const table = as.name(from)
   const keyColumn = as.name(keyName)
   const mapItem = map[kMapItem] || map
 
+  if (!by) {
+    assert(/\b__\b/.test(where), 'With no "by", you need to use "__" in "where"')
+  }
+
   return loader((db, mod) => async keys => {
     let r
 
-    if (useJoin) {
+    if (!by) {
       r = await db.any(`
         SELECT *
-        FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn})
-        JOIN ${table} ON (${by})
-        ${where && `WHERE ${where}`}
+        FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn}), ${table}
+        WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${mod && mod[kForUpdate] ? 'FOR UPDATE' : ''}
       `)
