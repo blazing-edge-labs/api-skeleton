@@ -45,8 +45,9 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
   const keyColumn = as.name(keyName)
   const mapItem = map[kMapItem] || map
 
-  if (!by) {
-    assert(/\b__\b/.test(where), 'With no "by", you need to use "__" in "where"')
+  if (!!by === /\b__\b/.test(where)) {
+    assert(by, 'With no "by", you need to use "__" in "where"')
+    assert(!by, 'You can not use both "by" and "__" in "where"')
   }
 
   return loader((db, mode = '') => async keys => {
