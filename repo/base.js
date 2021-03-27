@@ -39,8 +39,6 @@ function loader (resolveBatchWith, { batchMaxSize = 1000 } = {}) {
 
 const asIdentifier = x => as.csv([x])
 
-const kForUpdate = Symbol('FOR UPDATE')
-
 const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity }) => {
   const keyName = by || '__'
   const table = as.name(from)
@@ -51,7 +49,7 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
     assert(/\b__\b/.test(where), 'With no "by", you need to use "__" in "where"')
   }
 
-  return loader((db, mod) => async keys => {
+  return loader((db, mode = '') => async keys => {
     let r
 
     if (!by) {
@@ -60,7 +58,7 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
         FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn}), ${table}
         WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
-        ${mod && mod[kForUpdate] ? 'FOR UPDATE' : ''}
+        ${mode}
       `)
     } else if (keys.length === 1 && keys[0] === null) {
       r = []
@@ -70,7 +68,7 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
         WHERE ${keyColumn} IN (${as.csv(keys)})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
-        ${mod && mod[kForUpdate] ? 'FOR UPDATE' : ''}
+        ${mode}
       `)
     }
 
@@ -87,7 +85,6 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
   })
 }
 
-loader.FOR_UPDATE = { [kForUpdate]: true }
 loader.one = _loader({ multi: false })
 loader.all = _loader({ multi: true })
 
