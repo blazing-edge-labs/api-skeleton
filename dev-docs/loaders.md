@@ -66,9 +66,9 @@ async function list ({ limit = 10, includeUsers = false }) {
 
 Sometimes we need to load by normalized keys, or column, or both.
 
-For example, let's say users in your project should be able to login by entering own email address in any case.
+For example, let's say users in your project should be able to login by entering own email address non case-sensitively.
 
-One solution could be to store lowered emails in a separate column. It's always recommended to also keep email addresses in original case, since some could be case-sensitive and sending messages to only lowered addresses could be a security issue.
+One solution could be to store lower-cased emails in a separate column. It's always recommended to also keep email addresses in original case, since some emails could be case-sensitive and sending messages to addresses with altered case could be a security issue.
 
 Maintaining two versions of an address is cumbersome, tho.
 
@@ -80,7 +80,7 @@ CREATE UNIQUE INDEX user_lower_email_idx ON "user" ((lower("email")));
 
 Now we would like to have a loader to get a user by lowered email.
 
-With special `__` in your `where` option, you have full flexibility to deal with similar situations:
+You have full flexibility to deal with similar situations by using `__` (reference to passed key) inside the `where` option.
 
 ```js
 // -- in user.repo.js --
