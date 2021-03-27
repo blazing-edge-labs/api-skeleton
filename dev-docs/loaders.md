@@ -68,7 +68,7 @@ Sometimes we need to load by normalized keys, or column, or both.
 
 For example, let's say users in your project should be able to login by entering own email address in any case.
 
-One solution could be to store lowered emails in a separate column. It's always recommended to also keep email addresses in original case, since some could be case-sensitive and sending messages to only lowered addresses could be security issue.
+One solution could be to store lowered emails in a separate column. It's always recommended to also keep email addresses in original case, since some could be case-sensitive and sending messages to only lowered addresses could be a security issue.
 
 Maintaining two versions of an address is cumbersome, tho.
 
@@ -95,7 +95,7 @@ const loadUserByLoginEmail = userRepo.loadByLoginEmailWith(db)
 const user = await loadUserByLoginEmail('alex.smith@example.com')
 ```
 
-Now, not only we have certainty that login emails are unique using the index above, but also our loader will use such index to quickly load users (and auto-batch loading of multiple users in single query.)
+Now, not only we have certainty that login emails are unique using the index above, but also our loader will use such index to quickly load users (and auto-batch loading of multiple users in a single query.)
 
 ## Using Loaders in Transactions
 
@@ -119,6 +119,6 @@ await db.tx(async t => {
 
   const newBalance = calculateNewBalance(user.balance)
 
-  await userRepo.updateBalance(userId, newBalance)
+  await userRepo.updateBalance(userId, newBalance, {db: t})
 })
 ```
