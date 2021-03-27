@@ -8,7 +8,7 @@ We use the same concept of batched loading and implemented it with a more functi
 In a repo file like `repo/user.js` we could define a loader to load users by its `id`:
 
 ```js
-const loadByIdWith = loader.one({ from: 'user', by: 'id', map})
+const loadByIdWith = loader.one({ from: 'user', by: 'id', map })
 ```
 
 where `map` is usually the mapper function created with the `mapper` helper.
@@ -76,7 +76,7 @@ async function getFullName (userId) {
 
 // -- somewhere else --
 
-const fullNames = asyncMap(userIds, getFullName)
+const fullNames = await asyncMap(userIds, getFullName)
 ```
 
 will still batch loading of all users in single query, since multiple `userRepo.loadByIdWith(db)` calls will return same loader.
