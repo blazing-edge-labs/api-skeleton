@@ -1,6 +1,6 @@
 const assert = require('assert')
 
-const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
+const { byKeyed, byGrouped, memoArgs, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
 const { as } = require('db').pgp
 
@@ -33,20 +33,45 @@ function mapper (mapping) {
   return map
 }
 
-function loader (batchResolverWith, { batchMaxSize = 1000 } = {}) {
-  assert(batchResolverWith.length === 1, 'batchResolver creator must be a function with single argument')
-  return memoRefIn(new WeakMap(), t => createLoader(batchResolverWith(t), { batchMaxSize }))
+function loader (resolveBatchWith, { batchMaxSize = 1000 } = {}) {
+  return memoArgs((...args) => createLoader(resolveBatchWith(...args), { batchMaxSize }))
 }
 
-const selectLoader = ({ multi }) => ({ from: table, by: keyColumn, where = '', map = identity }) => {
-  const leftPart = as.format('SELECT * FROM $1~ WHERE $2~ IN', [table, keyColumn])
-  const rightPart = where && `AND ${where}`
+const asIdentifier = x => as.csv([x])
+
+const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity }) => {
+  const keyName = by || '__'
+  const table = as.name(from)
+  const keyColumn = as.name(keyName)
   const mapItem = map[kMapItem] || map
 
-  return loader(t => async keys => {
-    const r = (keys.length === 1 && keys[0] === null)
-      ? []
-      : await t.any(`${leftPart} (${as.csv(keys)}) ${rightPart}`)
+  if (!!by === /\b__\b/.test(where)) {
+    assert(by, 'With no "by", you need to use "__" in "where"')
+    assert(!by, 'You can not use both "by" and "__" in "where"')
+  }
+
+  return loader((db, mode = '') => async keys => {
+    let r
+
+    if (!by) {
+      r = await db.any(`
+        SELECT *
+        FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn}), ${table}
+        WHERE ${where}
+        ${orderBy && `ORDER BY ${orderBy}`}
+        ${mode}
+      `)
+    } else if (keys.length === 1 && keys[0] === null) {
+      r = []
+    } else {
+      r = await db.any(`
+        SELECT * FROM ${table}
+        WHERE ${keyColumn} IN (${as.csv(keys)})
+        ${where && `AND (${where})`}
+        ${orderBy && `ORDER BY ${orderBy}`}
+        ${mode}
+      `)
+    }
 
     // Minor optimization for single key case
     if (keys.length === 1) {
@@ -56,13 +81,13 @@ const selectLoader = ({ multi }) => ({ from: table, by: keyColumn, where = '', m
     }
 
     return multi
-      ? keys.map(byGrouped(r, keyColumn, mapItem))
-      : keys.map(byKeyed(r, keyColumn, mapItem, null))
+      ? keys.map(byGrouped(r, keyName, mapItem))
+      : keys.map(byKeyed(r, keyName, mapItem, null))
   })
 }
 
-loader.selectOne = selectLoader({ multi: false })
-loader.selectAll = selectLoader({ multi: true })
+loader.one = _loader({ multi: false })
+loader.all = _loader({ multi: true })
 
 module.exports = {
   mapper,
