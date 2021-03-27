@@ -83,6 +83,31 @@ will still batch loading of all users in single query, since multiple `userRepo.
 
 However separating loader preparation form its use, can make things more readable and slightly more efficient.
 
+This is equally true when creating custom loaders with `loader(...)`.
+
+```js
+const { byKeyed } = require('utils/data')
+
+const loadFullNameWith = loader((t, sep = ' ') => async userIds => {
+  const rows = await t.any(`
+    SELECT id, (first_name || $2 || last_name) as "fullName"
+    FROM "user"
+    WHERE id IN ($1:csv)
+  `, [userIds, sep])
+
+  return userIds.map(byKeyed(rows, 'id', 'fullName', null))
+})
+
+assert(loadFullNameWith(db) === loadFullNameWith(db)) 
+assert(loadFullNameWith(db, ', ') === loadFullNameWith(db), ', ')
+```
+
+Note that arguments are compared by identity.
+
+```
+assert(myLoader(db, { option1: true }) === loadFullNameWith(db, { option1: true })) // FAILS!!!
+```
+
 ## Loading by custom expression
 
 Sometimes we need to load by normalized keys, or column, or both.
