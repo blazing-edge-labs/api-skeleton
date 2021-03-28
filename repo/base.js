@@ -33,8 +33,9 @@ function mapper (mapping) {
   return map
 }
 
-function loader (batchResolverWith, { batchMaxSize = 1000 } = {}) {
+function loader (batchResolverWith, { batchMaxSize = 1000, ...notAllowed } = {}) {
   assert(batchResolverWith.length === 1, 'batchResolver creator must be a function with single argument')
+  assert.deepEqual(notAllowed, {}, 'Invalid options')
   return memoRefIn(new WeakMap(), t => createLoader(batchResolverWith(t), { batchMaxSize }))
 }
 
@@ -48,7 +49,7 @@ loader.withLocking = (batchResolverWithLocking, loaderOptions) => {
   return loadWith
 }
 
-const asIdentifier = x => as.csv([x])
+const asValue = x => as.csv([x])
 
 const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity }) => {
   const keyName = by || '__'
@@ -67,7 +68,7 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
     if (!by) {
       r = await db.any(`
         SELECT *
-        FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn}), ${table}
+        FROM (VALUES (${keys.map(asValue).join('),(')})) AS t (__), ${table}
         WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}
