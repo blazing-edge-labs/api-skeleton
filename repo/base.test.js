@@ -52,7 +52,7 @@ test('loader', async t => {
     const promise3 = txLoadById(8)
     t.ok(promise3 !== promise2, 'loader cache should differ for different t')
     t.ok(txLoadById === loadByIdWith(tx), 'for same tx, loaderWith should return same loader')
-    t.ok(txLoadById === loadByIdWith.withLock('UPDATE')(tx), 'for same tx, but different lock, loaderWith should return different loader')
+    t.ok(txLoadById !== loadByIdWith.lockFor('UPDATE')(tx), 'for same tx, but different lock, loaderWith should return different loader')
     t.deepEqual(await promise3, { id: 8, group: 3 })
     const promise4 = txLoadById(8)
     t.ok(promise3 !== promise4, 'after loading, it should not be cached any more')
