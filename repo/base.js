@@ -48,14 +48,14 @@ loader.withLocking = (batchResolverWithLocking, loaderOptions) => {
   return loadWith
 }
 
-const _loader = ({ multi }) => ({ from: table, by, where, orderBy, map = identity }) => {
+const _loader = ({ multi }) => ({ from: table, by = '', where = sql.empty, orderBy = sql.empty, map = identity }) => {
   assert(typeof table === 'string')
-  assert(!by || typeof by === 'string')
-  assert(where === undefined || isSql(where))
-  assert(orderBy === undefined || isSql(orderBy))
+  assert(typeof by === 'string')
+  assert(isSql(where))
+  assert(isSql(orderBy))
   assert(typeof map === 'function')
 
-  if (!!by === (where && /\b__\b/.test(where.source))) {
+  if (!!by === /\b__\b/.test(where.source)) {
     assert(by, 'With no "by", you need to use "__" in "where"')
     assert(!by, 'You can not use both "by" and "__" in "where"')
   }

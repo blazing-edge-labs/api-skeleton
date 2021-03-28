@@ -40,9 +40,11 @@ sql.csv = (xs, sep = ',') => new Sql(Array.from(xs, L).join(sep))
 sql.L = x => new Sql(L(x))
 sql.I = xs => new Sql(typeof xs === 'string' ? I(xs) : Array.from(xs, I).join(','))
 
+sql.empty = sql``
+
 const isEmpty = x => x === undefined || (isSql(x) && !x.source)
 
-sql.optional = (str, ...values) => values.some(isEmpty) ? sql`` : new Sql(_sql(str, values))
+sql.optional = (str, ...values) => values.some(isEmpty) ? sql.empty : new Sql(_sql(str, values))
 
 module.exports = {
   Sql,
