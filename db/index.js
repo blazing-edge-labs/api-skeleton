@@ -1,10 +1,7 @@
-const pgp = require('pg-promise')({
-  // error (_err, e) { console.log('------\n', e.query) },
-  // query (e) { console.log('------\n', e.query) },
-})
+const pgp = require('pg-promise')()
 
 const error = require('error')
-const { Database, sql } = require('db/lib')
+const { Database, sql, isSql } = require('db/lib')
 
 /// PG stuff
 
@@ -17,7 +14,9 @@ pgp.pg.types.setTypeParser(DATE_OID, v => v)
 const pgpDB = pgp(process.env.DATABASE_URL)
 
 const db = new Database(pgpDB.$pool, {
-  queryErrorHandler: e => {
+  queryErrorHandler: (e, query) => {
+    // console.log('------\n', query)
+    // console.error(e)
     throw error('db.query', e)
   },
   debug: process.env.NODE_ENV === 'development',
@@ -26,6 +25,7 @@ const db = new Database(pgpDB.$pool, {
 module.exports = {
   db,
   sql,
+  isSql,
   pgpDB,
   helper: pgp.helpers,
   pgp,

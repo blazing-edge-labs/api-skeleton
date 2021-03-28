@@ -1,4 +1,4 @@
-const { sql, _sql, Sql } = require('./sql')
+const { sql, _sql, isSql } = require('./sql')
 const { Database } = require('./db')
 
 const methods = [
@@ -14,7 +14,7 @@ const methods = [
 for (const name of methods) {
   const original = Database.prototype[name]
   Database.prototype[name] = function (str, ...values) {
-    if (str instanceof Sql) {
+    if (isSql(str)) {
       return original.call(this, str)
     }
     if (typeof str === 'string') {
@@ -29,5 +29,6 @@ for (const name of methods) {
 
 module.exports = {
   sql,
+  isSql,
   Database,
 }

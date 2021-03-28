@@ -33,11 +33,11 @@ const productRepo = require('repo/product')
 // ... map, ...
 
 async function list ({ limit = 10, includeUsers = false }) {
-  const orders = await db.any(`
+  const orders = await db.any`
     SELECT *
     FROM "order"
-    LIMIT $[limit]
-  `, {limit})
+    LIMIT ${limit}
+  `
   .then(map)
 
   const loadUserById = userRepo.loadByIdWith(db)
@@ -89,11 +89,11 @@ This is equally true when creating custom loaders with `loader(...)`.
 const { byKeyed } = require('utils/data')
 
 const loadFullNameWith = loader(db => async userIds => {
-  const rows = await db.any(`
+  const rows = await db.any`
     SELECT id, (first_name || ' ' || last_name) as "fullName"
     FROM "user"
-    WHERE id IN ($1:csv)
-  `, [userIds])
+    WHERE id IN (${sql.csv(userIds)})
+  `
 
   return userIds.map(byKeyed(rows, 'id', 'fullName', null))
 })
@@ -122,7 +122,7 @@ Now we would like to have a loader to get a user by lowered email.
 You have full flexibility to deal with similar situations by using `__` (reference to passed key) inside the `where` option.
 
 ```js
-const loadByLoginEmailWith = loader.one({ from: "user", where: `lower(__) = lower("email")`, map })
+const loadByLoginEmailWith = loader.one({ from: 'user', where: sql`lower(__) = lower("email")`, map })
 ```
 
 Now, not only we have certainty that login emails are unique using the index above, but also our loader will use such index to quickly load users (and auto-batch loading of multiple users in a single query.)
