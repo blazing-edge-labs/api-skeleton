@@ -64,7 +64,7 @@ async function list ({ limit = 10, includeUsers = false }) {
 
 ## Loader auto-memoization
 
-Loaders are memoized to ensure batching is not limited to local use.
+Loaders are memoized by `db` instance to ensure batching is not limited to local use.
 
 That means that
 
@@ -79,7 +79,7 @@ async function getFullName (userId) {
 const fullNames = await asyncMap(userIds, getFullName)
 ```
 
-will still batch loading of all users in single query, since multiple `userRepo.loadByIdWith(db)` calls will return same loader.
+will still batch loading of all users in single query, since `userRepo.loadByIdWith` calls will return same loader for same `db` instance.
 
 However separating loader preparation form its use, can make things more readable and slightly more efficient.
 
@@ -88,27 +88,17 @@ This is equally true when creating custom loaders with `loader(...)`.
 ```js
 const { byKeyed } = require('utils/data')
 
-const loadFullNameWith = loader((db, sep = ' ') => async userIds => {
+const loadFullNameWith = loader(db => async userIds => {
   const rows = await db.any(`
-    SELECT id, (first_name || $2 || last_name) as "fullName"
+    SELECT id, (first_name || ' ' || last_name) as "fullName"
     FROM "user"
     WHERE id IN ($1:csv)
-  `, [userIds, sep])
+  `, [userIds])
 
   return userIds.map(byKeyed(rows, 'id', 'fullName', null))
 })
 
 assert(loadFullNameWith(db) === loadFullNameWith(db)) 
-assert(loadFullNameWith(db, ', ') === loadFullNameWith(db), ', ')
-```
-
-Note that arguments are compared by identity.
-
-```js
-const loadA = myLoader(db, { option1: true })
-const loadB = myLoader(db, { option1: true })
-
-console.log(loadA === loadB) // -> false
 ```
 
 ## Loading by custom expression
@@ -156,7 +146,7 @@ You can also specify locking to ensure data is not changed concurrently by anoth
 ```js
 async function distributeMonyEqually (userIds) {
   await db.tx(async t => {
-    const users = await asyncMap(usersIds, userRepo.loadByIdWith(t, 'FOR UPDATE'))
+    const users = await asyncMap(usersIds, userRepo.loadByIdWith.lockFor('UPDATE')(t))
   
     const totBalance = users.reduce((sum, user) => sum + user.balance, 0)
     const newBalance = totBalance / users.length
@@ -166,3 +156,5 @@ async function distributeMonyEqually (userIds) {
 }
 
 ```
+
+Refer to [PG docs](https://www.postgresql.org/docs/9.6/sql-select.html#SQL-FOR-UPDATE-SHARE) for more info on locking options.

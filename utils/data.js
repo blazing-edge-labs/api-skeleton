@@ -39,44 +39,6 @@ function memoRefIn (cache, fn) {
   }
 }
 
-function memoArgs (fn) {
-  const NONE = {}
-
-  const root = {
-    result: NONE,
-    byVal: null,
-    byRef: null,
-  }
-
-  return (...args) => {
-    let node = root
-
-    for (let i = 0; i < args.length; ++i) {
-      const key = args[i]
-
-      const cache = key === Object(key)
-        ? node.byRef || (node.byRef = new WeakMap())
-        : node.byVal || (node.byVal = new Map())
-
-      node = cache.get(key)
-      if (!node) {
-        node = {
-          result: NONE,
-          byVal: null,
-          byRef: null,
-        }
-        cache.set(key, node)
-      }
-    }
-
-    if (node.result === NONE) {
-      node.result = fn(...args)
-    }
-
-    return node.result
-  }
-}
-
 const toFn = x => {
   if (x == null) {
     return identity
@@ -135,7 +97,6 @@ module.exports = {
   Queue,
   identity,
   memoRefIn,
-  memoArgs,
   byKeyed,
   byGrouped,
   mapIterable,
