@@ -38,6 +38,16 @@ function loader (batchResolverWith, { batchMaxSize = 1000 } = {}) {
   return memoRefIn(new WeakMap(), t => createLoader(batchResolverWith(t), { batchMaxSize }))
 }
 
+loader.withLocking = (batchResolverWithLocking, loaderOptions) => {
+  assert(batchResolverWithLocking.length === 1, 'batchResolverWithLocking creator must be a function with single argument')
+
+  const loadWith = loader(batchResolverWithLocking(''), loaderOptions)
+
+  loadWith.lockFor = memoRefIn(new Map(), lockType => loader(batchResolverWithLocking(`FOR ${lockType}`), loaderOptions))
+
+  return loadWith
+}
+
 const asIdentifier = x => as.csv([x])
 
 const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity }) => {
@@ -51,50 +61,40 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
     assert(!by, 'You can not use both "by" and "__" in "where"')
   }
 
-  const withLockMode = memoRefIn(new Map(), lockFor => {
-    const end = `
-      ${orderBy && `ORDER BY ${orderBy}`}
-      ${lockFor && `FOR ${lockFor}`}
-    `
+  return loader.withLocking(locking => db => async keys => {
+    let r
 
-    return loader(db => async keys => {
-      let r
+    if (!by) {
+      r = await db.any(`
+        SELECT *
+        FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn}), ${table}
+        WHERE ${where}
+        ${orderBy && `ORDER BY ${orderBy}`}
+        ${locking}
+      `)
+    } else if (keys.length === 1 && keys[0] === null) {
+      r = []
+    } else {
+      r = await db.any(`
+        SELECT * FROM ${table}
+        WHERE ${keyColumn} IN (${as.csv(keys)})
+        ${where && `AND (${where})`}
+        ${orderBy && `ORDER BY ${orderBy}`}
+        ${locking}
+      `)
+    }
 
-      if (!by) {
-        r = await db.any(`
-          SELECT *
-          FROM (VALUES (${keys.map(asIdentifier).join('),(')})) AS t (${keyColumn}), ${table}
-          WHERE ${where}
-          ${end}
-        `)
-      } else if (keys.length === 1 && keys[0] === null) {
-        r = []
-      } else {
-        r = await db.any(`
-          SELECT * FROM ${table}
-          WHERE ${keyColumn} IN (${as.csv(keys)})
-          ${where && `AND (${where})`}
-          ${end}
-        `)
-      }
-
-      // Minor optimization for single key case
-      if (keys.length === 1) {
-        return multi
-          ? [r.map(mapItem)]
-          : [r.length ? mapItem(r[0]) : null]
-      }
-
+    // Minor optimization for single key case
+    if (keys.length === 1) {
       return multi
-        ? keys.map(byGrouped(r, keyName, mapItem))
-        : keys.map(byKeyed(r, keyName, mapItem, null))
-    })
+        ? [r.map(mapItem)]
+        : [r.length ? mapItem(r[0]) : null]
+    }
+
+    return multi
+      ? keys.map(byGrouped(r, keyName, mapItem))
+      : keys.map(byKeyed(r, keyName, mapItem, null))
   })
-
-  const loadWith = withLockMode('')
-  loadWith.lockFor = withLockMode
-
-  return loadWith
 }
 
 loader.one = _loader({ multi: false })
