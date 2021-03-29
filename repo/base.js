@@ -34,22 +34,26 @@ function mapper (mapping) {
   return map
 }
 
-function loader (resolveKeysWith, { defaultDb = _db, batchMaxSize = 1000, ...notAllowed } = {}) {
-  assert(resolveKeysWith.length === 1, 'resolveKeysWith must be a function with single argument')
+function loader (resolveKeysWith, { db = _db, batchMaxSize = 1000, ...notAllowed } = {}) {
   assert.deepEqual(notAllowed, {}, 'Invalid options')
+  const canLock = resolveKeysWith.length === 2
 
-  const loadUsing = memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db), { batchMaxSize }))
-  const load = loadUsing(defaultDb)
-  load.using = loadUsing
-  return load
-}
+  const loadWithNoLocking = memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db, ''), { batchMaxSize }))
 
-loader.withLocking = (batchResolverWithLocking, loaderOptions) => {
-  assert(batchResolverWithLocking.length === 1, 'batchResolverWithLocking creator must be a function with single argument')
+  const loadWith = memoRefIn(new Map(), locking => {
+    assert(locking.startsWith('FOR '), 'Locking Clause expected to start with "FOR "')
+    return memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db, locking), { batchMaxSize }))
+  })
 
-  const load = loader(batchResolverWithLocking(''), loaderOptions)
+  const load = loadWithNoLocking(db)
 
-  load.for = memoRefIn(new Map(), lockType => loader(batchResolverWithLocking(`FOR ${lockType}`), loaderOptions))
+  load.using = (db, locking) => {
+    if (locking) {
+      assert(canLock, 'Loader not supporting locking')
+      return loadWith(locking)(db)
+    }
+    return loadWithNoLocking(db)
+  }
 
   return load
 }
@@ -67,7 +71,7 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
     assert(!by, 'You can not use both "by" and "__" in "where"')
   }
 
-  return loader.withLocking(locking => db => async keys => {
+  return loader((db, locking) => async keys => {
     let r
 
     if (!by) {
