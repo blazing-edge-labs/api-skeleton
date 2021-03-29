@@ -3,6 +3,7 @@ const assert = require('assert')
 const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
 const { as } = require('db').pgp
+const { db: _db } = require('db')
 
 const kMapItem = Symbol('mapItem')
 
@@ -33,25 +34,29 @@ function mapper (mapping) {
   return map
 }
 
-function loader (batchResolverWith, { batchMaxSize = 1000, ...notAllowed } = {}) {
-  assert(batchResolverWith.length === 1, 'batchResolver creator must be a function with single argument')
+function loader (resolveKeysWith, { defaultDb = _db, batchMaxSize = 1000, ...notAllowed } = {}) {
+  assert(resolveKeysWith.length === 1, 'resolveKeysWith must be a function with single argument')
   assert.deepEqual(notAllowed, {}, 'Invalid options')
-  return memoRefIn(new WeakMap(), t => createLoader(batchResolverWith(t), { batchMaxSize }))
+
+  const loadUsing = memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db), { batchMaxSize }))
+  const load = loadUsing(defaultDb)
+  load.using = loadUsing
+  return load
 }
 
 loader.withLocking = (batchResolverWithLocking, loaderOptions) => {
   assert(batchResolverWithLocking.length === 1, 'batchResolverWithLocking creator must be a function with single argument')
 
-  const loadWith = loader(batchResolverWithLocking(''), loaderOptions)
+  const load = loader(batchResolverWithLocking(''), loaderOptions)
 
-  loadWith.lockFor = memoRefIn(new Map(), lockType => loader(batchResolverWithLocking(`FOR ${lockType}`), loaderOptions))
+  load.for = memoRefIn(new Map(), lockType => loader(batchResolverWithLocking(`FOR ${lockType}`), loaderOptions))
 
-  return loadWith
+  return load
 }
 
 const asValue = x => as.csv([x])
 
-const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity }) => {
+const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity, ...rest }) => {
   const keyName = by || '__'
   const table = as.name(from)
   const keyColumn = as.name(keyName)
@@ -95,7 +100,7 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
     return multi
       ? keys.map(byGrouped(r, keyName, mapItem))
       : keys.map(byKeyed(r, keyName, mapItem, null))
-  })
+  }, rest)
 }
 
 loader.one = _loader({ multi: false })
