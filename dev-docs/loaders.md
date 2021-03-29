@@ -63,7 +63,7 @@ async function list ({ limit = 10, includeUsers = false }) {
 
 When inside a transaction (or task), we have to instruct loaders to use associated Database instance (usually referred with `t` or `db`.)
 
-All loaders created with `loader` will have a `.using(db)` used like:
+All loaders created with `loader` will have a `.using(db)` to do so.
 
 ```js
 await db.tx(async t => {
@@ -78,7 +78,7 @@ With loaders created with `loader.one` and `loader.all` you can also specify loc
 ```js
 async function distributeMonyEqually (userIds) {
   await db.tx(async t => {
-    const users = await asyncMap(usersIds, userRepo.loadById.for('UPDATE').using(t))
+    const users = await asyncMap(usersIds, userRepo.loadById.using(t, 'FOR UPDATE'))
   
     const totBalance = users.reduce((sum, user) => sum + user.balance, 0)
     const newBalance = totBalance / users.length
@@ -93,7 +93,7 @@ Refer to [PG docs](https://www.postgresql.org/docs/9.6/sql-select.html#SQL-FOR-U
 
 ## Auto Memoization
 
-`.using(db)` and `.for('...')` are memoized (will return same result for same input) to ensure batching is not limited to local use.
+`.using(...)` is memoized (will return same result for same inputs) to ensure batching is not limited to local use.
 
 That means that
 
@@ -105,14 +105,12 @@ async function getFullName (userId, { t = db } = {}) {
 
 // -- somewhere else --
 
-const fullNames = await asyncMap(userIds, getFullName)
+const fullNames = await asyncMap(userIds, id => getFullName(id, {t}))
 ```
 
-will still batch loading of all users in single query, since `loadById.using` calls will return same loader for same `db` instance.
+will still batch loading of all users in a single query, since `loadById.using` calls will return same loader for same `db` instance.
 
-However separating loader preparation form its use, can make things more readable and slightly more efficient.
-
-## Custom DB Loaders
+## Loaders from Custom Resolvers
 
 `loader(...)` can be used to define loaders by providing your own resolver for keys.
 
@@ -136,17 +134,17 @@ const fullName1 = await loadFullName(userId)
 const fullName2 = await loadFullName.using(db)(userId)
 ```
 
-Use `loader.withLocking` to make your loader able to lock rows:
+To make your loader support locking, specify second argument:
 
 ```js
 const { byKeyed } = require('utils/data')
 
-const loadFullName = loader.withLocking(locking => db => async userIds => {
+const loadFullNameV2 = loader((db, lockingClause) => async userIds => {
   const rows = await db.any(`
     SELECT id, (first_name || ' ' || last_name) as "fullName"
     FROM "user"
     WHERE id IN ($1:csv)
-    ${locking} // <- note the appended SQL
+    ${lockingClause} // <- note we appended second argument here
   `, [userIds])
 
   return userIds.map(byKeyed(rows, 'id', 'fullName', null))
@@ -154,7 +152,9 @@ const loadFullName = loader.withLocking(locking => db => async userIds => {
 
 // .. in a transaction ..
 
-const fullName = await loadFullName.for('UPDATE').using(t)(userId)
+const fullName = await loadFullNameV2.using(t, 'FOR UPDATE')(userId) // works
+
+const fullName = await loadFullName.using(t, 'FOR UPDATE')(userId) // throws "Loader not supporting locking"
 ```
 
 ## Loading by custom expression
@@ -163,9 +163,9 @@ Sometimes we need to load by normalized keys, or column, or both.
 
 For example, let's say users in your project should be able to login by entering own email address case-insensitively.
 
-One solution could be to store lower-cased emails in a separate column.
+One solution could be to store (unique) lower-cased emails in a separate column.
 
-> It's always recommended to also keep email addresses in original case, since some emails could be case-sensitive and sending messages to addresses with altered case could be a security issue.
+> It's always recommended to also keep email addresses in original form, since some emails could be case-sensitive and sending messages to addresses with altered case could be a security issue.
 
 Maintaining two versions of an address is cumbersome, tho.
 
@@ -177,7 +177,7 @@ CREATE UNIQUE INDEX user_lower_email_idx ON "user" ((lower("email")));
 
 Now we would like to have a loader to get users by theirs email case-insensitively.
 
-To do so, in the `where` option, you can use `__` (reference to passed key to the loader.)
+To do so, in the `where` option, you can use `__` to reference to passed key to the loader.
 
 ```js
 const loadByLoginEmail = loader.one({ from: "user", where: `lower(__) = lower("email")`, map })
