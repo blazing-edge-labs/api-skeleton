@@ -46,8 +46,7 @@ async function list ({ limit = 10, includeUsers = false }) {
       userRepo.loadById(userId),
       userRepo.loadRolesByUserId(userId),
     ])
-    user.roles = roles
-    return user
+    return { ...user, roles }
   }
 
   return asyncMap(orders, order => {
