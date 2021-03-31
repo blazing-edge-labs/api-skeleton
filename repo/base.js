@@ -58,15 +58,19 @@ function loader (resolveKeysWith, { db = _db, batchMaxSize = 1000, ...notAllowed
 
 const asValue = x => as.csv([x])
 
-const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity, ...rest }) => {
-  const keyName = by || '__'
-  const table = as.name(from)
-  const keyColumn = as.name(keyName)
-  const mapItem = map[kMapItem] || map
-
+const sqlLoaderBuilder = ({ multi }) => ({ select = '*', from, by = '', where = '', orderBy = '', map = identity, ...rest }) => {
   if (!!by === /\b__\b/.test(where)) {
     assert(by, 'With no "by", you need to use "__" in "where"')
     assert(!by, 'You can not use both "by" and "__" in "where"')
+  }
+
+  if (/\W/.test(from)) from = as.name(from)
+  const keyName = by || '__'
+  const keyColumn = as.name(keyName)
+  const mapItem = map[kMapItem] || map
+
+  if (!by && select !== '*') {
+    select = `__, ${select}`
   }
 
   return loader((db, locking) => async keys => {
@@ -74,8 +78,8 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
 
     if (!by) {
       r = await db.any(`
-        SELECT *
-        FROM (VALUES (${keys.map(asValue).join('),(')})) AS t (__), ${table}
+        SELECT ${select}
+        FROM (VALUES (${keys.map(asValue).join('),(')})) AS __t (__), ${from}
         WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}
@@ -84,7 +88,7 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
       r = []
     } else {
       r = await db.any(`
-        SELECT * FROM ${table}
+        SELECT ${select} FROM ${from}
         WHERE ${keyColumn} IN (${as.csv(keys)})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
@@ -105,8 +109,8 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
   }, rest)
 }
 
-loader.one = _loader({ multi: false })
-loader.all = _loader({ multi: true })
+loader.one = sqlLoaderBuilder({ multi: false })
+loader.all = sqlLoaderBuilder({ multi: true })
 
 module.exports = {
   mapper,
