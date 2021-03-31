@@ -34,16 +34,16 @@ function mapper (mapping) {
   return map
 }
 
-function loader (resolveKeysWith, { db = _db, batchMaxSize = 1000, ...notAllowed } = {}) {
+function loader (resolveKeysWith, { db = _db, mapKey, batchMaxSize = 1000, ...notAllowed } = {}) {
   assert.deepEqual(notAllowed, {}, 'Invalid options')
-  const canLock = resolveKeysWith.length === 2
 
   const loaderWith = memoRefIn(new Map(), locking => {
     if (locking) {
-      assert(canLock, 'Loader not supporting locking')
+      assert(resolveKeysWith.length >= 2, 'Loader not supporting locking')
       assert(locking.startsWith('FOR '), 'Locking Clause expected to start with "FOR "')
     }
-    return memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db, locking), { batchMaxSize }))
+    const options = { mapKey, batchMaxSize }
+    return memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db, locking), options))
   })
 
   const loaderWithNoLocking = loaderWith('')
