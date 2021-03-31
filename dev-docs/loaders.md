@@ -146,7 +146,7 @@ Now, not only we have certainty that login emails are unique using the index abo
 const loadByUserId = loader.all({
   select: `DISTINCT ON (id) p.*`,
   from: `"order" o, "product" p`,
-  where: `__ = o."user_id" AND p."order_id" = o."id"`,
+  where: `__::int = o."user_id" AND p."order_id" = o."id"`,
   orderBy: `"price" DESC`,
   map,
 })
@@ -161,11 +161,14 @@ const loadByUserId = loader.all({
   select: `DISTINCT ON (id) p.*`,
   from: `"order" o,
     JOIN "product" p ON p."order_id" = o."id"`,
-  where: `__ = o."user_id"`,
+  by: `o."user_id"`,
   orderBy: `"price" DESC`,
   map,
 })
+
 ```
+
+> NOTE: When using `__`, make sure to cast it to correct type (not necessary if type is`text`).
 
 ## Loaders from Custom Resolvers
 

@@ -58,6 +58,8 @@ function loader (resolveKeysWith, { db = _db, mapKey, batchMaxSize = 1000, ...no
 
 const asValue = x => as.csv([x])
 
+const reWord = /^[a-zA-Z]\w*$/
+
 const sqlLoaderBuilder = ({ multi }) => ({
   select = '*',
   from,
@@ -68,22 +70,24 @@ const sqlLoaderBuilder = ({ multi }) => ({
   ...rest
 }) => {
   assert(from, '"from" is required')
-  assert(!by || /^\w+$/.test(by), '"by", when given, should be a column name')
   assert(!by === /\b__\b/.test(where), '"by", xor use of `__` in "where", is required')
 
-  if (/^\w+$/.test(from)) {
-    from = as.name(from)
-  } else {
-    assert(!by, '"by" is used but "from" is not a simple table name - use `__` in "where" instead')
-  }
-
-  if (!by && select !== '*') {
-    select = `__, ${select}`
-  }
-
-  const keyName = by || '__'
-  const keyColumn = as.name(keyName)
   const mapItem = map[kMapItem] || map
+  const simpleSel = reWord.test(by) && select === '*'
+  const keyName = simpleSel ? by : '__'
+
+  if (reWord.test(by)) by = as.name(by)
+  if (reWord.test(from)) from = as.name(from)
+  if (reWord.test(select)) select = as.name(select)
+  if (reWord.test(orderBy)) orderBy = as.name(orderBy)
+
+  if (by && !simpleSel) {
+    select += `, ${by} AS __`
+  }
+
+  if (!by && select !== '*' && select !== '__') {
+    select += ', __'
+  }
 
   return loader((db, locking) => async keys => {
     let r
@@ -91,7 +95,7 @@ const sqlLoaderBuilder = ({ multi }) => ({
     if (!by) {
       r = await db.any(`
         SELECT ${select}
-        FROM (VALUES (${keys.map(asValue).join('),(')})) AS __t (__), ${from}
+        FROM (VALUES (${keys.map(asValue).join('),(')})) __t (__), ${from}
         WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}
@@ -100,8 +104,9 @@ const sqlLoaderBuilder = ({ multi }) => ({
       r = []
     } else {
       r = await db.any(`
-        SELECT ${select} FROM ${from}
-        WHERE ${keyColumn} IN (${as.csv(keys)})
+        SELECT ${select}
+        FROM ${from}
+        WHERE ${by} IN (${as.csv(keys)})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}
