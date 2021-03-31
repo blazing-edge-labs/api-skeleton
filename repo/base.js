@@ -38,22 +38,20 @@ function loader (resolveKeysWith, { db = _db, batchMaxSize = 1000, ...notAllowed
   assert.deepEqual(notAllowed, {}, 'Invalid options')
   const canLock = resolveKeysWith.length === 2
 
-  const loadWithNoLocking = memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db, ''), { batchMaxSize }))
-
-  const loadWith = memoRefIn(new Map(), locking => {
-    assert(locking.startsWith('FOR '), 'Locking Clause expected to start with "FOR "')
+  const loaderWith = memoRefIn(new Map(), locking => {
+    if (locking) {
+      assert(canLock, 'Loader not supporting locking')
+      assert(locking.startsWith('FOR '), 'Locking Clause expected to start with "FOR "')
+    }
     return memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db, locking), { batchMaxSize }))
   })
 
-  const load = loadWithNoLocking(db)
+  const loaderWithNoLocking = loaderWith('')
+  const load = loaderWithNoLocking(db)
 
-  load.using = (db, locking) => {
-    if (locking) {
-      assert(canLock, 'Loader not supporting locking')
-      return loadWith(locking)(db)
-    }
-    return loadWithNoLocking(db)
-  }
+  load.using = (db, locking) => locking
+    ? loaderWith(locking)(db)
+    : loaderWithNoLocking(db)
 
   return load
 }
