@@ -58,20 +58,28 @@ function loader (resolveKeysWith, { db = _db, mapKey, batchMaxSize = 1000, ...no
 
 const asValue = x => as.csv([x])
 
-const sqlLoaderBuilder = ({ multi }) => ({ select = '*', from, by = '', where = '', orderBy = '', map = identity, ...rest }) => {
-  if (!!by === /\b__\b/.test(where)) {
-    assert(by, 'With no "by", you need to use "__" in "where"')
-    assert(!by, 'You can not use both "by" and "__" in "where"')
-  }
+const sqlLoaderBuilder = ({ multi }) => ({
+  select = '*',
+  from,
+  by = '',
+  where = '',
+  orderBy = '',
+  map = identity,
+  ...rest
+}) => {
+  assert(!by === /\b__\b/.test(where), '"by", xor use of `__` in "where", is required')
 
-  if (/\W/.test(from)) from = as.name(from)
-  const keyName = by || '__'
-  const keyColumn = as.name(keyName)
-  const mapItem = map[kMapItem] || map
+  if (/^\w+$/.test(from)) {
+    from = as.name(from)
+  }
 
   if (!by && select !== '*') {
     select = `__, ${select}`
   }
+
+  const keyName = by || '__'
+  const keyColumn = as.name(keyName)
+  const mapItem = map[kMapItem] || map
 
   return loader((db, locking) => async keys => {
     let r
