@@ -110,53 +110,6 @@ const fullNames = await asyncMap(userIds, id => getFullName(id, {t}))
 
 will still batch loading of all users in a single query, since `loadById.using` calls will return same loader for same `db` instance.
 
-## Loaders from Custom Resolvers
-
-`loader(...)` can be used to define loaders by providing your own resolver for keys.
-
-```js
-const { byKeyed } = require('utils/data')
-
-const loadFullName = loader(db => async userIds => {
-  const rows = await db.any(`
-    SELECT id, (first_name || ' ' || last_name) as "fullName"
-    FROM "user"
-    WHERE id IN ($1:csv)
-  `, [userIds])
-
-  return userIds.map(byKeyed(rows, 'id', 'fullName', null))
-})
-
-// ...
-
-const fullName1 = await loadFullName(userId)
-
-const fullName2 = await loadFullName.using(db)(userId)
-```
-
-To make your loader support locking, specify second argument:
-
-```js
-const { byKeyed } = require('utils/data')
-
-const loadFullNameV2 = loader((db, lockingClause) => async userIds => {
-  const rows = await db.any(`
-    SELECT id, (first_name || ' ' || last_name) as "fullName"
-    FROM "user"
-    WHERE id IN ($1:csv)
-    ${lockingClause} // <- note we appended second argument here
-  `, [userIds])
-
-  return userIds.map(byKeyed(rows, 'id', 'fullName', null))
-})
-
-// .. in a transaction ..
-
-const fullName = await loadFullNameV2.using(t, 'FOR UPDATE')(userId) // works
-
-const fullName = await loadFullName.using(t, 'FOR UPDATE')(userId) // throws "Loader not supporting locking"
-```
-
 ## Loading by custom expression
 
 Sometimes we need to load by normalized keys, or column, or both.
@@ -180,9 +133,63 @@ Now we would like to have a loader to get users by theirs email case-insensitive
 To do so, in the `where` option, you can use `__` to reference to passed key to the loader.
 
 ```js
-const loadByLoginEmail = loader.one({ from: "user", where: `lower(__) = lower("email")`, map })
+const loadByLoginEmail = loader.one({ from: 'user', where: `lower(__) = lower("email")`, map })
 ```
 
 Now, not only we have certainty that login emails are unique using the index above, but also our loader will use such index to quickly load users (and auto-batch loading of multiple users in a single query.)
 
+## Examples with Joins
 
+```js
+// in repo/products.js
+
+const loadByUserId = loader.all({
+  select: `DISTINCT ON (id) p.*`,
+  from: `"order" o, "product" p`,
+  where: `__ = o."user_id" AND p."order_id" = o."id"`,
+  orderBy: `"price" DESC`,
+  map,
+})
+```
+
+or
+
+```js
+// in repo/products.js
+
+const loadByUserId = loader.all({
+  select: `DISTINCT ON (id) p.*`,
+  from: `"order" o,
+    JOIN "product" p ON p."order_id" = o."id"`,
+  where: `__ = o."user_id"`,
+  orderBy: `"price" DESC`,
+  map,
+})
+```
+
+## Loaders from Custom Resolvers
+
+`loader(...)` can be used to define loaders by providing your own resolver for keys.
+
+> Note: This is exposed mainly for non-SQL loaders, or for other kind of databases. When possible, it's recommended to use `loader.all` or `loader.one` instead.
+
+```js
+const { byKeyed } = require('utils/data')
+
+const loadFullName = loader((db, lockingClause) => async userIds => {
+  const rows = await db.any(`
+    SELECT id, (first_name || ' ' || last_name) as "fullName"
+    FROM "user"
+    WHERE id IN ($1:csv)
+    ${lockingClause} // <- note have to used second argument
+  `, [userIds])
+
+  return userIds.map(byKeyed(rows, 'id', 'fullName', null))
+})
+
+const fullName1 = await loadFullName(userId)
+const fullName2 = await loadFullName.using(t)(userId)
+const fullName3 = await loadFullName.using(t, 'FOR SHARE')(userId)
+```
+
+If for some reason your loader should not support locking clauses, just omit the `lockingClause` argument, and any attempt of locking with it will un-silently fail with `"Loader not supporting locking"`.
