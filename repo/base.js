@@ -67,10 +67,14 @@ const sqlLoaderBuilder = ({ multi }) => ({
   map = identity,
   ...rest
 }) => {
+  assert(from, '"from" is required')
+  assert(!by || /^\w+$/.test(by), '"by", when given, should be a column name')
   assert(!by === /\b__\b/.test(where), '"by", xor use of `__` in "where", is required')
 
   if (/^\w+$/.test(from)) {
     from = as.name(from)
+  } else {
+    assert(!by, '"by" is used but "from" is not a simple table name - use `__` in "where" instead')
   }
 
   if (!by && select !== '*') {
