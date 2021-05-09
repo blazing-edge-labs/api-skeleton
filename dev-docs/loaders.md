@@ -24,7 +24,7 @@ const loadRolesByUserId = loader.all({
 })
 ```
 
-Now, let's say there are tables "order" and "product". In `repo/order.js` there could be a `list` function.
+Now, let's say there are "order" and "product" tables. Then, in `repo/order.js`, there could be a `list` function.
 
 ```js
 const {asyncMap, asyncAssign} = require('utils/promise')
@@ -62,52 +62,50 @@ async function list ({ limit = 10, includeUsers = false }) {
 
 When inside a transaction (or task), we have to instruct loaders to use associated Database instance (usually referred with `t` or `db`.)
 
-All loaders created with `loader` will have a `.using(db)` to do so.
+All loaders created with `loader` will have an `.using(db)` method to do so.
 
 ```js
 await db.tx(async t => {
   // ...
-
   const user = await userRepo.loadById.using(t)(userId)
+  // ...
 })
 ```
 
-With loaders created with `loader.one` and `loader.all` you can also specify locking to ensure data is not changed concurrently by another transaction during your update.
+Method also accepts an optional [locking clause](https://www.postgresql.org/docs/9.6/sql-select.html#SQL-FOR-UPDATE-SHARE) as second argument.
 
 ```js
 async function distributeMonyEqually (userIds) {
   await db.tx(async t => {
-    const users = await asyncMap(usersIds, userRepo.loadById.using(t, 'FOR UPDATE'))
+    const users = await asyncMap(userIds, userRepo.loadById.using(t, 'FOR UPDATE'))
   
     const totBalance = users.reduce((sum, user) => sum + user.balance, 0)
     const newBalance = totBalance / users.length
   
-    await userRepo.updateBalanceToUsers(usersIds, newBalance, {t})
+    await userRepo.updateBalanceToUsers(userIds, newBalance, {t})
   })
 }
 
 ```
 
-Refer to [PG docs](https://www.postgresql.org/docs/9.6/sql-select.html#SQL-FOR-UPDATE-SHARE) for more info on locking options.
-
 ## Auto Memoization
 
-`.using(...)` is memoized (will return same result for same inputs) to ensure batching is not limited to local use.
+Given same arguments, `.using(...)` returns same loader to ensure batching is not limited to local use.
 
 That means that
 
 ```js
-async function getFullName (userId, { t = db } = {}) {
+async function getFullName (t, userId) {
   const user = await userRepo.loadById.using(t)(userId)
   return `${user.firstName} ${user.lastName}`
 }
 
 // -- somewhere else --
 
-const fullNames = await asyncMap(userIds, id => getFullName(id, {t}))
+const fullNames = await asyncMap(userIds, id => getFullName(t, id))
 ```
 
-will still batch loading of all users in a single query, since `loadById.using` calls will return same loader for same `db` instance.
+will still batch loading of all those users in a single query, since `loadById.using` calls will return same loader for same `db` instance.
 
 ## Loading by custom expression
 
@@ -124,12 +122,12 @@ Maintaining two versions of an address is cumbersome, tho.
 Instead of adding a column, we can create an index like:
 
 ```SQL
-CREATE UNIQUE INDEX user_lower_email_idx ON "user" ((lower("email")));
+CREATE UNIQUE INDEX user_lower_email_idx ON "user" (lower("email"));
 ```
 
-Now we would like to have a loader to get users by theirs email case-insensitively.
+Now we would like to have a loader to get users by theirs lower-cased email.
 
-To do so, in the `where` option, you can use `__` to reference to passed key to the loader.
+To do so, in the `where` option, you can use `__` as reference to the email input.
 
 ```js
 const loadByLoginEmail = loader.one({ from: 'user', where: `lower(__) = lower("email")`, map })
@@ -143,7 +141,7 @@ Now, not only we have certainty that login emails are unique using the index abo
 // in repo/products.js
 
 const loadByUserId = loader.all({
-  select: `DISTINCT ON (id) p.*`,
+  select: `DISTINCT ON (p.id) p.*`,
   from: `"order" o, "product" p`,
   where: `__::int = o."user_id" AND p."order_id" = o."id"`,
   orderBy: `"price" DESC`,
@@ -157,7 +155,7 @@ or
 // in repo/products.js
 
 const loadByUserId = loader.all({
-  select: `DISTINCT ON (id) p.*`,
+  select: `DISTINCT ON (p.id) p.*`,
   from: `"order" o,
     JOIN "product" p ON p."order_id" = o."id"`,
   by: `o."user_id"`,
@@ -167,13 +165,13 @@ const loadByUserId = loader.all({
 
 ```
 
-> NOTE: When using `__`, make sure to cast it to correct type (not necessary if type is`text`).
+> NOTE: When using `__`, make sure to cast it to correct type (not necessary if it's a `text`).
 
 ## Loaders from Custom Resolvers
 
 `loader(...)` can be used to define loaders by providing your own resolver for keys.
 
-> Note: This is exposed mainly for non-SQL loaders, or for other kind of databases. When possible, it's recommended to use `loader.all` or `loader.one` instead.
+> Note: This is exposed mainly for non-SQL loaders, or for other kind of databases or sources. When possible, it's recommended to use `loader.all` or `loader.one` instead.
 
 ```js
 const { byKeyed } = require('utils/data')
@@ -183,7 +181,7 @@ const loadFullName = loader((db, lockingClause) => async userIds => {
     SELECT id, (first_name || ' ' || last_name) as "fullName"
     FROM "user"
     WHERE id IN ($1:csv)
-    ${lockingClause} // <- note have to used second argument
+    ${lockingClause} // <- remember to use the second argument
   `, [userIds])
 
   return userIds.map(byKeyed(rows, 'id', 'fullName', null))
@@ -194,4 +192,4 @@ const fullName2 = await loadFullName.using(t)(userId)
 const fullName3 = await loadFullName.using(t, 'FOR SHARE')(userId)
 ```
 
-If for some reason your loader should not support locking clauses, just omit the `lockingClause` argument, and any attempt of locking with it will un-silently fail with `"Loader not supporting locking"`.
+If for some reason your loader should not support locking clauses, just omit the `lockingClause` argument, and any attempt of locking with it, will un-silently fail with `"Loader not supporting locking"`.
