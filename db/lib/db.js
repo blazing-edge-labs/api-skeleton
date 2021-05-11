@@ -112,7 +112,7 @@ class Task extends Database {
     }
   }
 
-  _startEndQuery (topTxQuery, subTxQuery) {
+  _getTxQuery (topTxQuery, subTxQuery) {
     return this._txLevel === 1 ? topTxQuery : `${subTxQuery} sp${this._txLevel}`
   }
 
@@ -121,7 +121,7 @@ class Task extends Database {
 
     if (isTx) {
       ++this._txLevel
-      await client.query(this._startEndQuery('BEGIN', 'SAVEPOINT'))
+      await client.query(this._getTxQuery('BEGIN', 'SAVEPOINT'))
     }
 
     this.client = client
@@ -147,8 +147,8 @@ class Task extends Database {
           })
         }
         await client.query(throwed
-          ? this._startEndQuery('ROLLBACK', 'ROLLBACK TO SAVEPOINT')
-          : this._startEndQuery('COMMIT', 'RELEASE SAVEPOINT'),
+          ? this._getTxQuery('ROLLBACK', 'ROLLBACK TO SAVEPOINT')
+          : this._getTxQuery('COMMIT', 'RELEASE SAVEPOINT'),
         )
         --this._txLevel
       }
