@@ -81,7 +81,7 @@ class Task extends Database {
       throw new Error('running query in finished task/tx')
     }
     if (this._pending === -1) {
-      return this._pushMethodCall(this.query, query, values)
+      return this._pushMethodCall(this._runQuery, query, values)
     }
 
     ++this._pending
