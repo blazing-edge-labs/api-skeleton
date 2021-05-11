@@ -10,6 +10,11 @@ class Sql {
   toJSON () {
     return {}
   }
+
+  async exec (client) {
+    const { rows } = await client.query(this.source)
+    return rows
+  }
 }
 
 const isSql = x => x instanceof Sql
@@ -21,20 +26,19 @@ const compact = s => {
   return str.split(left.slice(i)).join('\n')
 }
 
-function _sql ({ raw }, values) {
+function sql ({ raw }, ...values) {
   let source = raw[0]
 
-  for (let i = 0; i < values.length;) {
+  for (let i = 0; i < values.length; ++i) {
     const value = values[i]
     source += isSql(value) ? value.source : L(value)
     source += raw[++i]
   }
 
   // return compact(source)
-  return source
+  return new Sql(source)
 }
 
-const sql = (str, ...values) => new Sql(_sql(str, values))
 sql.__raw__ = x => x instanceof Sql ? x : new Sql(x)
 sql.csv = (xs, sep = ',') => new Sql(Array.from(xs, L).join(sep))
 sql.L = x => new Sql(L(x))
@@ -44,12 +48,11 @@ sql.empty = sql``
 
 const isEmpty = x => x === undefined || (isSql(x) && !x.source)
 
-sql.optional = (str, ...values) => values.some(isEmpty) ? sql.empty : new Sql(_sql(str, values))
+sql.optional = (str, ...values) => values.every(isEmpty) ? sql.empty : sql(str, ...values)
 
 module.exports = {
   Sql,
   sql,
   isSql,
-  _sql,
   compact,
 }

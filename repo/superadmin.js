@@ -24,7 +24,7 @@ const getAll = (resource) => {
   const { map } = resourceMaps[resource]
   return async (query) => {
     const { sort, page, perPage } = query
-    return db.any`
+    return db.sql`
       SELECT * FROM ${sql.I(resource)}
       ORDER BY ${sql.__raw__(sort.join(' '))}
       LIMIT ${perPage} OFFSET ${(page - 1) * perPage}
@@ -36,7 +36,7 @@ const getAll = (resource) => {
 const getMany = (resource) => {
   const { map } = resourceMaps[resource]
   return async (ids) => {
-    return db.any`
+    return db.sql`
       SELECT * FROM ${sql.I(resource)}
       WHERE id IN (${sql.csv(ids)})
     `
@@ -46,47 +46,51 @@ const getMany = (resource) => {
 
 const getAllCount = (resource) => {
   return async () => {
-    return db.any`SELECT count(*) AS total FROM ${sql.I(resource)}`
+    return db.sql`SELECT count(*) AS total FROM ${sql.I(resource)}`
   }
 }
 
 const getById = (resource) => {
   const { map } = resourceMaps[resource]
   return async (id) => {
-    return db.one`
+    const [row] = await db.sql`
       SELECT *
       FROM ${sql.I(resource)}
       WHERE id = ${id}
     `
-    .catch(error.db({ noData: `${resource}.not_found` }))
     .then(map)
+
+    if (!row) throw error(`${resource}.not_found`)
+    return row
   }
 }
 
 const remove = (resource) => {
   return async (id) => {
-    return db.any`DELETE FROM ${sql.I(resource)} WHERE id = ${id}`
+    return db.sql`DELETE FROM ${sql.I(resource)} WHERE id = ${id}`
   }
 }
 
 const create = (resource) => {
   const { columnSet } = resourceMaps[resource]
   return async (data) => {
-    return db.one`
+    const [row] = await db.sql`
       ${sql.__raw__(helper.insert(data, columnSet))}
       RETURNING id
     `
+    return row
   }
 }
 
 const update = (resource) => {
   const { columnSet } = resourceMaps[resource]
   return async (id, data) => {
-    return db.one`
+    const [row] = await db.sql`
       ${sql.__raw__(helper.update(data, columnSet))}
       WHERE id = ${id}
       RETURNING id
     `
+    return row
   }
 }
 

@@ -67,7 +67,7 @@ const _loader = ({ multi }) => ({ from: table, by = '', where = sql.empty, order
     let r
 
     if (!by) {
-      r = await db.any`
+      r = await db.sql`
         SELECT *
         FROM (VALUES (${sql.csv(keys, '),(')})) AS t (__), ${sql.I(table)}
         WHERE ${where}
@@ -77,7 +77,7 @@ const _loader = ({ multi }) => ({ from: table, by = '', where = sql.empty, order
     } else if (keys.length === 1 && keys[0] === null) {
       r = []
     } else {
-      r = await db.any`
+      r = await db.sql`
         SELECT * FROM ${sql.I(table)}
         WHERE ${sql.I(by)} IN (${sql.csv(keys)})
         ${sql.optional`AND (${where})`}

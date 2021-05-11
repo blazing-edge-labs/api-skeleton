@@ -1,64 +1,21 @@
 const { Queue } = require('utils/data')
 
-class QueryResultError extends Error {
-  constructor (what, frame) {
-    super(what)
-    this.what = what
-    this.code = QueryResultError.code[what]
-    Error.captureStackTrace(this, frame || this.constructor)
-  }
-}
-
-QueryResultError.code = {
-  noData: 1,
-  multiple: 2,
-  notEmpty: 3,
-}
-
 class Database {
   constructor (pool, opts) {
     this.pool = pool
     this._opts = opts
   }
 
-  async any (query, values) {
-    const { rows } = await this._runQuery(query, values)
-    return rows
-  }
-
-  async one (query, values) {
-    const { rows } = await this._runQuery(query, values)
-    if (rows.length === 0) throw new QueryResultError('noData')
-    if (rows.length > 1) throw new QueryResultError('multiple')
-    return rows[0]
-  }
-
-  async oneOrNone (query, values) {
-    const { rows } = await this._runQuery(query, values)
-    if (rows.length === 0) return null
-    if (rows.length > 1) throw new QueryResultError('multiple')
-    return rows[0]
-  }
-
-  async none (query, values) {
-    const { rows } = await this._runQuery(query, values)
-    if (rows.length > 0) throw new QueryResultError('notEmpty')
-    return null
-  }
-
-  async many (query, values) {
-    const { rows } = await this._runQuery(query, values)
-    if (rows.length === 0) throw new QueryResultError('noData')
-    return rows
-  }
-
   async query (query, values) {
-    const { rows } = await this._runQuery(query, values)
-    return rows
-  }
-
-  result (query, values) {
-    return this._runQuery(query, values)
+    try {
+      const { rows } = await this._runQuery(query, values)
+      return rows
+    } catch (e) {
+      if (this._opts.queryErrorHandler) {
+        this._opts.queryErrorHandler(e, query)
+      }
+      throw e
+    }
   }
 
   task (fn) {
@@ -69,16 +26,8 @@ class Database {
     return this._runTask(fn, true)
   }
 
-  async _runQuery (query) {
-    // console.log(`-----\n${query}\n-----`)
-    try {
-      return await this.pool.query(query)
-    } catch (e) {
-      if (this._opts.queryErrorHandler) {
-        this._opts.queryErrorHandler(e, query)
-      }
-      throw e
-    }
+  _runQuery (query) {
+    return this.pool.query(query)
   }
 
   async _runTask (fn, isTx) {
@@ -132,17 +81,12 @@ class Task extends Database {
       throw new Error('running query in finished task/tx')
     }
     if (this._pending === -1) {
-      return this._pushMethodCall(this._runQuery, query)
+      return this._pushMethodCall(this.query, query)
     }
 
     ++this._pending
     try {
       return await this.client.query(query)
-    } catch (e) {
-      if (this._opts.queryErrorHandler) {
-        this._opts.queryErrorHandler(e, query)
-      }
-      throw e
     } finally {
       if (--this._pending === 0) {
         process.nextTick(this._next)
@@ -233,5 +177,4 @@ function bindAsyncCallStack (fn, toFn, header = 'After:') {
 
 module.exports = {
   Database,
-  QueryResultError,
 }

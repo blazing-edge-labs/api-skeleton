@@ -33,7 +33,7 @@ const productRepo = require('repo/product')
 // ... map, ...
 
 async function list ({ limit = 10, includeUsers = false }) {
-  const orders = await db.any`
+  const orders = await db.sql`
     SELECT *
     FROM "order"
     LIMIT ${limit}
@@ -89,7 +89,7 @@ This is equally true when creating custom loaders with `loader(...)`.
 const { byKeyed } = require('utils/data')
 
 const loadFullNameWith = loader(db => async userIds => {
-  const rows = await db.any`
+  const rows = await db.sql`
     SELECT id, (first_name || ' ' || last_name) as "fullName"
     FROM "user"
     WHERE id IN (${sql.csv(userIds)})
