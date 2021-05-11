@@ -1,5 +1,5 @@
 const error = require('error')
-const { db, sql, helper } = require('db')
+const { db, helper } = require('db')
 const userRepo = require('repo/user')
 
 // [ ] Todo: implement list filtering
@@ -25,8 +25,8 @@ const getAll = (resource) => {
   return async (query) => {
     const { sort, page, perPage } = query
     return db.sql`
-      SELECT * FROM ${sql.I(resource)}
-      ORDER BY ${sql.__raw__(sort.join(' '))}
+      SELECT * FROM ~${resource}
+      ORDER BY ^${sort.join(' ')}
       LIMIT ${perPage} OFFSET ${(page - 1) * perPage}
     `
     .then(map)
@@ -37,8 +37,8 @@ const getMany = (resource) => {
   const { map } = resourceMaps[resource]
   return async (ids) => {
     return db.sql`
-      SELECT * FROM ${sql.I(resource)}
-      WHERE id IN (${sql.csv(ids)})
+      SELECT * FROM ~${resource}
+      WHERE id IN (^${ids})
     `
     .then(map)
   }
@@ -46,7 +46,7 @@ const getMany = (resource) => {
 
 const getAllCount = (resource) => {
   return async () => {
-    return db.sql`SELECT count(*) AS total FROM ${sql.I(resource)}`
+    return db.sql`SELECT count(*) AS total FROM ~${resource}`
   }
 }
 
@@ -55,7 +55,7 @@ const getById = (resource) => {
   return async (id) => {
     const [row] = await db.sql`
       SELECT *
-      FROM ${sql.I(resource)}
+      FROM ~${resource}
       WHERE id = ${id}
     `
     .then(map)
@@ -67,7 +67,7 @@ const getById = (resource) => {
 
 const remove = (resource) => {
   return async (id) => {
-    return db.sql`DELETE FROM ${sql.I(resource)} WHERE id = ${id}`
+    return db.sql`DELETE FROM ~${resource} WHERE id = ${id}`
   }
 }
 
@@ -75,7 +75,7 @@ const create = (resource) => {
   const { columnSet } = resourceMaps[resource]
   return async (data) => {
     const [row] = await db.sql`
-      ${sql.__raw__(helper.insert(data, columnSet))}
+      ^${helper.insert(data, columnSet)}
       RETURNING id
     `
     return row
@@ -86,7 +86,7 @@ const update = (resource) => {
   const { columnSet } = resourceMaps[resource]
   return async (id, data) => {
     const [row] = await db.sql`
-      ${sql.__raw__(helper.update(data, columnSet))}
+      ^${helper.update(data, columnSet)}
       WHERE id = ${id}
       RETURNING id
     `

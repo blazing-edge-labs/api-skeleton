@@ -2,7 +2,6 @@ const assert = require('assert')
 
 const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
-const { sql, isSql } = require('db')
 
 const kMapItem = Symbol('mapItem')
 
@@ -41,18 +40,16 @@ function loader (batchResolverWith, { batchMaxSize = 1000 } = {}) {
 loader.withLocking = (batchResolverWithLocking, loaderOptions) => {
   assert(batchResolverWithLocking.length === 1, 'batchResolverWithLocking creator must be a function with single argument')
 
-  const loadWith = loader(batchResolverWithLocking(sql``), loaderOptions)
+  const loadWith = loader(batchResolverWithLocking(''), loaderOptions)
 
-  loadWith.lockFor = memoRefIn(new Map(), lockType => loader(batchResolverWithLocking(sql.__raw__(`FOR ${lockType}`)), loaderOptions))
+  loadWith.lockFor = memoRefIn(new Map(), lockType => loader(batchResolverWithLocking(`FOR ${lockType}`), loaderOptions))
 
   return loadWith
 }
 
-const _loader = ({ multi }) => ({ from: table, by = '', where = sql.empty, orderBy = sql.empty, map = identity }) => {
+const _loader = ({ multi }) => ({ from: table, by = '', where = '', orderBy = '', map = identity }) => {
   assert(typeof table === 'string')
   assert(typeof by === 'string')
-  assert(isSql(where))
-  assert(isSql(orderBy))
   assert(typeof map === 'function')
 
   if (!!by === /\b__\b/.test(where.source)) {
@@ -69,20 +66,20 @@ const _loader = ({ multi }) => ({ from: table, by = '', where = sql.empty, order
     if (!by) {
       r = await db.sql`
         SELECT *
-        FROM (VALUES (${sql.csv(keys, '),(')})) AS t (__), ${sql.I(table)}
-        WHERE ${where}
-        ${sql.optional`ORDER BY ${orderBy}`}
-        ${locking}
+        FROM (VALUES (^${L => keys.map(L).join('),(')})) AS t (__), ~${table}
+        WHERE ^${where}
+        ^${orderBy && `ORDER BY ${orderBy}`}
+        ^${locking}
       `
     } else if (keys.length === 1 && keys[0] === null) {
       r = []
     } else {
       r = await db.sql`
-        SELECT * FROM ${sql.I(table)}
-        WHERE ${sql.I(by)} IN (${sql.csv(keys)})
-        ${sql.optional`AND (${where})`}
-        ${sql.optional`ORDER BY ${orderBy}`}
-        ${locking}
+        SELECT * FROM ~${table}
+        WHERE ~${by} IN (^${keys})
+        ^${where && `AND (${where})`}
+        ^${orderBy && `ORDER BY ${orderBy}`}
+        ^${locking}
       `
     }
 

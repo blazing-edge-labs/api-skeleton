@@ -92,7 +92,7 @@ const loadFullNameWith = loader(db => async userIds => {
   const rows = await db.sql`
     SELECT id, (first_name || ' ' || last_name) as "fullName"
     FROM "user"
-    WHERE id IN (${sql.csv(userIds)})
+    WHERE id IN (^${userIds})
   `
 
   return userIds.map(byKeyed(rows, 'id', 'fullName', null))
@@ -122,7 +122,7 @@ Now we would like to have a loader to get a user by lowered email.
 You have full flexibility to deal with similar situations by using `__` (reference to passed key) inside the `where` option.
 
 ```js
-const loadByLoginEmailWith = loader.one({ from: 'user', where: sql`lower(__) = lower("email")`, map })
+const loadByLoginEmailWith = loader.one({ from: 'user', where: `lower(__) = lower("email")`, map })
 ```
 
 Now, not only we have certainty that login emails are unique using the index above, but also our loader will use such index to quickly load users (and auto-batch loading of multiple users in a single query.)

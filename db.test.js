@@ -20,12 +20,12 @@ test('parallel sub transactions', async t => {
 
   async function runSubTx (tx) {
     await tx.tx(async tx => {
-      await tx.sql`INSERT INTO test_tx ("desc") VALUES ('back-rolled\')`
+      await tx.sql`INSERT INTO test_tx ("desc") VALUES ('back-rolled')`
       await delay(2.5e3)
       // eslint-disable-next-line promise/catch-or-return
       delay(100).then(() => tx.sql`INSERT INTO test_tx ("desc") VALUES ('leaked out')'`) // a bug-like case
       .catch(e => t.ok(e)) // a bug-like case
-      await db.sql`SOMETHING WRONG`
+      await tx.sql`SOMETHING WRONG`
     }).catch(console.log)
   }
 

@@ -1,7 +1,7 @@
 const pgp = require('pg-promise')()
 
 const error = require('error')
-const { Database, sql, isSql } = require('db/lib')
+const { Database, sql } = require('db/lib')
 
 /// PG stuff
 
@@ -19,13 +19,12 @@ const db = new Database(pgpDB.$pool, {
     // console.error(e)
     throw error('db.query', e)
   },
-  debug: process.env.NODE_ENV === 'development',
+  debug: process.env.NODE_ENV !== 'production',
 })
 
 module.exports = {
   db,
   sql,
-  isSql,
   pgpDB,
   helper: pgp.helpers,
   pgp,

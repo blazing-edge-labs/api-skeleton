@@ -1,7 +1,7 @@
 const test = require('test')
 const { asyncMap } = require('utils/promise')
 const { mapper, loader } = require('./base')
-const { db, sql } = require('db')
+const { db } = require('db')
 
 test('loader', async t => {
   await db.query`
@@ -26,7 +26,7 @@ test('loader', async t => {
   })
 
   const loadByIdWith = loader.one({ from: 'test_loader', by: 'id', map })
-  const loadByGroupWith = loader.all({ from: 'test_loader', where: sql`-__ = -"group_num" AND "id" > 5`, orderBy: sql`"id"`, map })
+  const loadByGroupWith = loader.all({ from: 'test_loader', where: '-__ = -"group_num" AND "id" > 5', orderBy: '"id"', map })
 
   const loadById = loadByIdWith(db)
   const promise = loadById(8)

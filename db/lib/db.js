@@ -26,8 +26,8 @@ class Database {
     return this._runTask(fn, true)
   }
 
-  _runQuery (query) {
-    return this.pool.query(query)
+  _runQuery (query, values) {
+    return this.pool.query(query, values)
   }
 
   async _runTask (fn, isTx) {
@@ -76,17 +76,17 @@ class Task extends Database {
     })
   }
 
-  async _runQuery (query) {
+  async _runQuery (query, values) {
     if (!this.client) {
       throw new Error('running query in finished task/tx')
     }
     if (this._pending === -1) {
-      return this._pushMethodCall(this.query, query)
+      return this._pushMethodCall(this.query, query, values)
     }
 
     ++this._pending
     try {
-      return await this.client.query(query)
+      return await this.client.query(query, values)
     } finally {
       if (--this._pending === 0) {
         process.nextTick(this._next)
