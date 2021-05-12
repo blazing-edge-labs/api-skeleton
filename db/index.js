@@ -26,6 +26,5 @@ module.exports = {
   db,
   sql,
   pgpDB,
-  helper: pgp.helpers,
   pgp,
 }

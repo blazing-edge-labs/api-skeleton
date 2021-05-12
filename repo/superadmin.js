@@ -1,5 +1,5 @@
 const error = require('error')
-const { db, helper } = require('db')
+const { db, sql } = require('db')
 const userRepo = require('repo/user')
 
 // [ ] Todo: implement list filtering
@@ -14,7 +14,7 @@ const userRepo = require('repo/user')
 const resourceMaps = {
   user: {
     map: userRepo.map,
-    columnSet: userRepo.columnSet,
+    prepare: userRepo.prepare,
   },
   // add here
 }
@@ -72,22 +72,21 @@ const remove = (resource) => {
 }
 
 const create = (resource) => {
-  const { columnSet } = resourceMaps[resource]
+  const { prepare } = resourceMaps[resource]
   return async (data) => {
-    const [row] = await db.sql`
-      ^${helper.insert(data, columnSet)}
+    const [item] = await db.sql`
+      ^${sql.insertOne(resource, prepare(data))}
       RETURNING id
     `
-    return row
+    return item
   }
 }
 
 const update = (resource) => {
-  const { columnSet } = resourceMaps[resource]
+  const { prepare } = resourceMaps[resource]
   return async (id, data) => {
     const [row] = await db.sql`
-      ^${helper.update(data, columnSet)}
-      WHERE id = ${id}
+      ^${sql.update(resource, { id }, prepare(data))}
       RETURNING id
     `
     return row

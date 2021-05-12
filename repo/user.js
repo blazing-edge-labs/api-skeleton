@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs')
 
 const konst = require('konst')
 const error = require('error')
-const { db, helper } = require('db')
+const { db } = require('db')
 const { mapper } = require('repo/base')
 
 const map = mapper({
@@ -12,9 +12,9 @@ const map = mapper({
   hasPassword: (r) => !!r.password,
 })
 
-const columnSet = new helper.ColumnSet([
-  'email',
-], { table: 'user' })
+const prepare = mapper({
+  email: 'email',
+})
 
 async function hashPassword (password) {
   return bcrypt.hash(password, Number(process.env.BCRYPT_ROUNDS))
@@ -172,6 +172,6 @@ module.exports = {
   getByIdPassword,
   getRoleById,
   map,
-  columnSet,
+  prepare,
   setRoleById,
 }

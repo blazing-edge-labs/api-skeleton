@@ -32,6 +32,24 @@ const sql = ({ raw }, ...xs) => toValue => {
   return query
 }
 
+sql.update = (table, condition, update, onlyIfDistinct = false) => toValue => {
+  const pairs = Object.entries(update).map(pair => [toName(pair[0]), toValue(pair[1])])
+  const cond = toSource(condition, toValue)
+
+  return `
+    UPDATE ${toName(table)}
+    SET ${pairs.map(it => it.join(' = ')).join(', ')}
+    WHERE (${cond})
+    ${onlyIfDistinct ? 'AND (' + pairs.map(it => it.join(' IS DISTINCT FROM ')).join(' OR ') + ')' : ''}
+  `
+}
+
+sql.insertOne = (table, data) => sql`
+  INSERT INTO ~${table}
+  (~${Object.keys(data)})
+  VALUES (^${Object.values(data)})
+`
+
 module.exports = {
   sql,
 }
