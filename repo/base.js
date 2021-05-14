@@ -2,6 +2,7 @@ const assert = require('assert')
 
 const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
+const { sql } = require('db')
 
 const kMapItem = Symbol('mapItem')
 
@@ -66,20 +67,20 @@ const _loader = ({ multi }) => ({ from: table, by = '', where = '', orderBy = ''
     if (!by) {
       r = await db.sql`
         SELECT *
-        FROM (VALUES (^${L => keys.map(L).join('),(')})) AS t (__), ~${table}
-        WHERE ^${where}
-        ^${orderBy && `ORDER BY ${orderBy}`}
-        ^${locking}
+        FROM (VALUES (${sql.values(keys, '),(')})) AS t (__), "${table}"
+        WHERE ${sql.raw(where)}
+        ${sql.raw(orderBy && `ORDER BY ${orderBy}`)}
+        ${sql.raw(locking)}
       `
     } else if (keys.length === 1 && keys[0] === null) {
       r = []
     } else {
       r = await db.sql`
-        SELECT * FROM ~${table}
-        WHERE ~${by} IN (^${keys})
-        ^${where && `AND (${where})`}
-        ^${orderBy && `ORDER BY ${orderBy}`}
-        ^${locking}
+        SELECT * FROM "${table}"
+        WHERE "${by}" IN (${sql.names(keys)})
+        ${sql.raw(where && `AND (${where})`)}
+        ${sql.raw(orderBy && `ORDER BY ${orderBy}`)}
+        ${sql.raw(locking)}
       `
     }
 

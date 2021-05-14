@@ -1,53 +1,104 @@
-const { toIdentifier: toName } = require('./format')
+const { toIdentifier: toName, toLiteral } = require('./format')
 
-const { isArray } = Array
+const escapeQuotes = str => str.replace(/"/g, '""')
 
-const toSource = (x, toValue) => {
-  if (!x) return ''
-  if (typeof x === 'function') return x(toValue)
-  if (isArray(x)) return x.map(toValue).join()
-  return String(x)
+// function toParametrizedQuery (compile) {
+//   const values = []
+//   const text = compile(val => `$${values.push(val)}`)
+//   return { text, values }
+// }
+
+function toTextOnlyQuery (compile) {
+  return { text: compile(toLiteral) }
 }
 
-const reSplitMod = /([~^])?$/
-
-const sql = ({ raw }, ...xs) => toValue => {
-  let query = ''
-
-  for (let i = 0; i < xs.length; ++i) {
-    const [chunk, mod] = raw[i].split(reSplitMod)
-    query += chunk
-
-    if (!mod) {
-      query += toValue(xs[i])
-    } else if (mod === '~') {
-      query += isArray(xs[i]) ? xs[i].map(toName).join() : toName(xs[i])
-    } else if (mod === '^') {
-      query += toSource(xs[i], toValue)
-    }
+class Sql {
+  constructor (compile) {
+    this._compile = compile
+    this._query = null
   }
 
-  query += raw[raw.length - 1]
+  _ensureQuery () {
+    if (this._query == null) {
+      this._query = toTextOnlyQuery(this._compile)
+    }
+    return this._query
+  }
 
-  return query
+  toSource () {
+    return this._compile(toLiteral)
+  }
+
+  get text () {
+    return this._ensureQuery().text
+  }
+
+  get values () {
+    return this._ensureQuery().values
+  }
 }
 
-sql.update = (table, condition, update, onlyIfDistinct = false) => toValue => {
+const sql = ({ raw }, ...params) => new Sql(toValue => {
+  let text = raw[0]
+
+  for (let i = 0; i < params.length;) {
+    const param = params[0]
+
+    if (param instanceof Sql) {
+      text += param._compile(toValue)
+    } else if (raw[i].endsWith('"') && raw[i + 1].startsWith('"')) {
+      text += escapeQuotes(param)
+    } else {
+      text += toValue(param)
+    }
+    text += raw[++i]
+  }
+
+  return text
+})
+
+// sql.custom = fn => new Sql(fn)
+
+sql._ = new Sql(() => '')
+
+sql.raw = code => {
+  if (!code) return sql._
+  if (code instanceof Sql) return code
+  return new Sql(() => code)
+}
+
+sql.names = (names, sep = ',') => {
+  const code = Array.from(names, toName).join(sep)
+  return new Sql(() => code)
+}
+
+sql.values = (values, sep = ',') => new Sql(toValue => Array.from(values, toValue).join(sep))
+
+sql.cond = obj => new Sql(toValue => {
+  return Object.keys(obj)
+  .map(key => {
+    const x = obj[key]
+    return `${toName(key)} = ${x instanceof Sql ? `(${x._compile(toValue)})` : toValue(x)}`
+  })
+  .join(' AND ')
+})
+
+sql.update = (table, condition, update, onlyIfDistinct = false) => new Sql(toValue => {
   const pairs = Object.entries(update).map(pair => [toName(pair[0]), toValue(pair[1])])
-  const cond = toSource(condition, toValue)
+  const condSql = condition instanceof Sql ? condition : sql.cond(condition)
 
   return `
     UPDATE ${toName(table)}
     SET ${pairs.map(it => it.join(' = ')).join(', ')}
-    WHERE (${cond})
+    WHERE (${condSql._compile(toValue)})
     ${onlyIfDistinct ? 'AND (' + pairs.map(it => it.join(' IS DISTINCT FROM ')).join(' OR ') + ')' : ''}
   `
-}
+})
 
 sql.insertOne = (table, data) => sql`
-  INSERT INTO ~${table}
-  (~${Object.keys(data)})
-  VALUES (^${Object.values(data)})
+  INSERT INTO "${table}"
+  (${sql.names(Object.keys(data))})
+  VALUES (${sql.values(Object.values(data))})
 `
 
 module.exports = {

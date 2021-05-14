@@ -25,9 +25,10 @@ const getAll = (resource) => {
   return async (query) => {
     const { sort, page, perPage } = query
     return db.sql`
-      SELECT * FROM ~${resource}
-      ORDER BY ^${sort.join(' ')}
-      LIMIT ${perPage} OFFSET ${(page - 1) * perPage}
+      SELECT * FROM "${resource}"
+      ORDER BY ${sql.raw(sort.join(' '))}
+      LIMIT ${perPage}
+      OFFSET ${(page - 1) * perPage}
     `
     .then(map)
   }
@@ -37,8 +38,8 @@ const getMany = (resource) => {
   const { map } = resourceMaps[resource]
   return async (ids) => {
     return db.sql`
-      SELECT * FROM ~${resource}
-      WHERE id IN (^${ids})
+      SELECT * FROM "${resource}"
+      WHERE id IN (${sql.values(ids)})
     `
     .then(map)
   }
@@ -46,7 +47,7 @@ const getMany = (resource) => {
 
 const getAllCount = (resource) => {
   return async () => {
-    return db.sql`SELECT count(*) AS total FROM ~${resource}`
+    return db.sql`SELECT count(*) AS total FROM "${resource}"`
   }
 }
 
@@ -55,7 +56,7 @@ const getById = (resource) => {
   return async (id) => {
     const [row] = await db.sql`
       SELECT *
-      FROM ~${resource}
+      FROM "${resource}"
       WHERE id = ${id}
     `
     .then(map)
@@ -67,7 +68,7 @@ const getById = (resource) => {
 
 const remove = (resource) => {
   return async (id) => {
-    return db.sql`DELETE FROM ~${resource} WHERE id = ${id}`
+    return db.sql`DELETE FROM "${resource}" WHERE id = ${id}`
   }
 }
 
@@ -75,7 +76,7 @@ const create = (resource) => {
   const { prepare } = resourceMaps[resource]
   return async (data) => {
     const [item] = await db.sql`
-      ^${sql.insertOne(resource, prepare(data))}
+      ${sql.insertOne(resource, prepare(data))}
       RETURNING id
     `
     return item
@@ -86,7 +87,7 @@ const update = (resource) => {
   const { prepare } = resourceMaps[resource]
   return async (id, data) => {
     const [row] = await db.sql`
-      ^${sql.update(resource, { id }, prepare(data))}
+      ${sql.update(resource, { id }, prepare(data))}
       RETURNING id
     `
     return row
