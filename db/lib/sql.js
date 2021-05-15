@@ -61,23 +61,64 @@ sql.cond = obj => new Sql(toValue => {
   .join(' AND ')
 })
 
-sql.update = (table, condition, update, onlyIfDistinct = false) => new Sql(toValue => {
-  const pairs = Object.entries(update).map(pair => [toName(pair[0]), toValue(pair[1])])
-  const condSql = condition instanceof Sql ? condition : sql.cond(condition)
+const update = ({ onlyIfDistinct = false }) => (table, condition, data) => new Sql(toValue => {
+  const conditionSql = condition instanceof Sql ? condition : sql.cond(condition)
+  const conditionText = conditionSql._compile(toValue)
+  const colNames = Object.keys(data).map(toName)
+  const colValues = Object.values(data).map(toValue)
 
-  return `
+  let text = `
     UPDATE ${toName(table)}
-    SET ${pairs.map(it => it.join(' = ')).join(', ')}
-    WHERE (${condSql._compile(toValue)})
-    ${onlyIfDistinct ? 'AND (' + pairs.map(it => it.join(' IS DISTINCT FROM ')).join(' OR ') + ')' : ''}
+    SET ${colNames.map((colName, i) => `${colName} = ${colValues[i]}`)}
+    WHERE (${conditionText})
   `
+
+  if (onlyIfDistinct) {
+    const distinctCondition = colNames
+    .map((colName, i) => `${colName} IS DISTINCT FROM ${colValues[i]}`)
+    .join(' OR ')
+
+    text += `AND (${distinctCondition})`
+  }
+
+  return text
 })
 
-sql.insertOne = (table, data) => sql`
-  INSERT INTO "${table}"
-  (${sql.names(Object.keys(data))})
-  VALUES (${sql.values(Object.values(data))})
-`
+sql.update = update({})
+sql.updateIfDistinct = update({ onlyIfDistinct: true })
+
+sql.insertOne = (table, data) => new Sql(toValue => `
+  INSERT INTO "${toName(table)}"
+  (${Object.keys(data).map(toName)})
+  VALUES (${Object.values(data).map(toValue)})
+`)
+
+const upsert = ({ onConflictDo, onlyIfDistinct = false }) => (table, filter, data) => new Sql(toValue => {
+  let text = sql.insertOne(table, { ...filter, ...data })._compile(toValue)
+
+  text += `\nON CONFLICT (${Object.keys(filter).map(toName)}) DO ${onConflictDo}`
+
+  if (onConflictDo === 'UPDATE') {
+    const tableName = toName(table)
+    const colNames = Object.keys(data).map(toName)
+
+    text += `\nSET ${colNames.map(colName => `${colName} = Excluded.${colName}`)}`
+
+    if (onlyIfDistinct) {
+      const distinctCondition = colNames
+      .map(colName => `${tableName}.${colName} IS DISTINCT FROM Excluded.${colName}`)
+      .join(' OR ')
+
+      text += `\nWHERE (${distinctCondition})`
+    }
+  }
+
+  return text
+})
+
+sql.upsert = upsert({ onConflictDo: 'UPDATE' })
+sql.upsertIfMissing = upsert({ onConflictDo: 'NOTHING' })
+sql.upsertIfDistinct = upsert({ onConflictDo: 'UPDATE', onlyIfDistinct: true })
 
 module.exports = {
   sql,
