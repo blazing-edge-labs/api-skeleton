@@ -1,9 +1,8 @@
 const { sql } = require('./sql')
-// const { toLiteral } = require('./format')
 const { Database } = require('./db')
 
 Database.prototype.sql = function runSql (...args) {
-  return this.query(sql(...args))
+  return this.query(sql(...args).source)
 }
 
 module.exports = {

@@ -2,39 +2,19 @@ const { toIdentifier: toName, toLiteral } = require('./format')
 
 const escapeQuotes = str => str.replace(/"/g, '""')
 
-// function toParametrizedQuery (compile) {
-//   const values = []
-//   const text = compile(val => `$${values.push(val)}`)
-//   return { text, values }
-// }
-
-function toTextOnlyQuery (compile) {
-  return { text: compile(toLiteral) }
-}
-
 class Sql {
   constructor (compile) {
     this._compile = compile
-    this._query = null
   }
 
-  _ensureQuery () {
-    if (this._query == null) {
-      this._query = toTextOnlyQuery(this._compile)
-    }
-    return this._query
-  }
-
-  toSource () {
+  get source () {
     return this._compile(toLiteral)
   }
 
-  get text () {
-    return this._ensureQuery().text
-  }
-
-  get values () {
-    return this._ensureQuery().values
+  toPgQuery (name) {
+    const values = []
+    const text = this._compile(val => `$${values.push(val)}`)
+    return { name, text, values }
   }
 }
 
@@ -57,14 +37,12 @@ const sql = ({ raw }, ...params) => new Sql(toValue => {
   return text
 })
 
-// sql.custom = fn => new Sql(fn)
-
 sql._ = new Sql(() => '')
 
-sql.raw = code => {
-  if (!code) return sql._
-  if (code instanceof Sql) return code
-  return new Sql(() => code)
+sql.raw = source => {
+  if (!source) return sql._
+  if (source instanceof Sql) return source
+  return new Sql(() => source)
 }
 
 sql.names = (names, sep = ',') => {
@@ -78,7 +56,7 @@ sql.cond = obj => new Sql(toValue => {
   return Object.keys(obj)
   .map(key => {
     const x = obj[key]
-    return `${toName(key)} = ${x instanceof Sql ? `(${x._compile(toValue)})` : toValue(x)}`
+    return `${toName(key)} = ${x instanceof Sql ? x._compile(toValue) : toValue(x)}`
   })
   .join(' AND ')
 })
