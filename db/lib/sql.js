@@ -81,4 +81,5 @@ sql.insertOne = (table, data) => sql`
 
 module.exports = {
   sql,
+  Sql,
 }

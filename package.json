@@ -26,12 +26,11 @@
     "koa-response-time": "^2.1.0",
     "koa-router": "^8.0.8",
     "lodash": "^4.17.19",
-    "migratio": "^2.0.3",
-    "mri": "^1.1.5",
     "nested-error-stacks": "^2.1.0",
     "nodemailer": "^6.4.6",
     "npm-run-all": "^4.1.5",
-    "pg-promise": "^10.5.2"
+    "pg": "^8.6.0",
+    "postgres-migrations": "^5.1.1"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
@@ -52,15 +51,11 @@
   },
   "scripts": {
     "ci": "run-s lint coverage",
-    "db:recreate": "run-s db:drop \"db up\"",
-    "db:migrate": "run-s \"db up\"",
-    "db:drop": "run-s \"db drop\"",
-    "db:seed": "run-s \"db seed\"",
     "dev": "NODE_PATH=. node-dev --no-notify index.js",
     "lint": "eslint .",
     "db": "NODE_PATH=. node -r ./env db/cli.js",
     "start": "NODE_PATH=. node index.js",
-    "test": "NODE_ENV=test run-s db:recreate db:seed test:run",
+    "test": "NODE_ENV=test run-s \"db drop\" \"db migrate\" \"db seed\" test:run",
     "test:run": "NODE_PATH=. tape -r ./env '{!(node_modules)/**/*.test.js,./*.test.js}' | tap-difflet",
     "coverage": "nyc --reporter=lcov --reporter=text npm run test"
   }

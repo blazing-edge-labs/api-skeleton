@@ -1,4 +1,4 @@
-const { sql } = require('./sql')
+const { sql, Sql } = require('./sql')
 const { Database } = require('./db')
 
 Database.prototype.sql = function runSql (...args) {
@@ -7,5 +7,6 @@ Database.prototype.sql = function runSql (...args) {
 
 module.exports = {
   sql,
+  Sql,
   Database,
 }

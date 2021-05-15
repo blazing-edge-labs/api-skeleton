@@ -1,19 +1,17 @@
-const pgp = require('pg-promise')()
+const { Pool, types } = require('pg')
 
-const error = require('error')
 const { Database, sql } = require('db/lib')
-
-/// PG stuff
+const error = require('error')
 
 // https://github.com/brianc/node-pg-types/issues/50
 const DATE_OID = 1082
-pgp.pg.types.setTypeParser(DATE_OID, v => v)
+types.setTypeParser(DATE_OID, v => v)
 
-/// DB stuff
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
 
-const pgpDB = pgp(process.env.DATABASE_URL)
-
-const db = new Database(pgpDB.$pool, {
+const db = new Database(pool, {
   queryErrorHandler: (e, query) => {
     // console.log('------\n', query)
     // console.error(e)
@@ -25,6 +23,4 @@ const db = new Database(pgpDB.$pool, {
 module.exports = {
   db,
   sql,
-  pgpDB,
-  pgp,
 }
