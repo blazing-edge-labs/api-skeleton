@@ -1,4 +1,5 @@
 const { toIdentifier: toName, toLiteral } = require('./format')
+const { isArray } = require('lodash')
 
 const escapeQuotes = str => str.replace(/"/g, '""')
 
@@ -56,69 +57,126 @@ sql.cond = obj => new Sql(toValue => {
   return Object.keys(obj)
   .map(key => {
     const x = obj[key]
-    return `${toName(key)} = ${x instanceof Sql ? x._compile(toValue) : toValue(x)}`
+    return x instanceof Sql
+      ? `(${toName(key)} ${x._compile(toValue)})`
+      : `${toName(key)} = ${toValue(x)}`
   })
   .join(' AND ')
 })
 
-const update = ({ onlyIfDistinct = false }) => (table, condition, data) => new Sql(toValue => {
-  const conditionSql = condition instanceof Sql ? condition : sql.cond(condition)
-  const conditionText = conditionSql._compile(toValue)
-  const colNames = Object.keys(data).map(toName)
-  const colValues = Object.values(data).map(toValue)
+sql.sets = obj => new Sql(toValue => {
+  return Object.keys(obj)
+  .map(key => {
+    const x = obj[key]
+    return x instanceof Sql
+      ? `(${toName(key)} = ${x._compile(toValue)})`
+      : `${toName(key)} = ${toValue(x)}`
+  })
+  .join(', ')
+})
 
-  let text = `
-    UPDATE ${toName(table)}
-    SET ${colNames.map((colName, i) => `${colName} = ${colValues[i]}`)}
-    WHERE (${conditionText})
-  `
+sql.update = ({
+  table, // string
+  where, // Sql | object
+  set, // object
+  skipEqual = false,
+  returning = undefined, // '*' | string[] | undefined
+}) => new Sql(toValue => {
+  const conditionSql = where instanceof Sql ? where : sql.cond(where)
+  let condition = conditionSql._compile(toValue)
 
-  if (onlyIfDistinct) {
-    const distinctCondition = colNames
-    .map((colName, i) => `${colName} IS DISTINCT FROM ${colValues[i]}`)
+  const names = Object.keys(set).map(toName)
+  const values = Object.values(set).map(toValue)
+
+  if (skipEqual) {
+    const isDistinct = names
+    .map((name, i) => `${name} IS DISTINCT FROM ${values[i]}`)
     .join(' OR ')
 
-    text += `AND (${distinctCondition})`
+    condition = `(${condition}) AND (${isDistinct})`
   }
 
-  return text
+  if (returning && returning !== '*') {
+    returning = returning.map(toName)
+  }
+
+  return `
+    UPDATE ${toName(table)}
+    SET ${names.map((name, i) => `${name} = ${values[i]}`)}
+    WHERE ${condition}
+    ${returning ? `RETURNING ${returning}` : ''}
+  `
 })
 
-sql.update = update({})
-sql.updateIfDistinct = update({ onlyIfDistinct: true })
+sql.insert = ({
+  intoTable, // string
+  data, // object | object[]
+  columns = Object.keys(data), // string[]
+  onConflict = undefined, // string | string[] | undefined
+  update = undefined, // boolean | string[] | undefined
+  skipEqual = false, // boolean
+  returning = undefined, // '*' | string[] | undefined
+}) => new Sql(toValue => {
+  if (!columns) {
+    if (isArray(data)) throw new TypeError('`columns` required when `data` is an array')
+    columns = Object.keys(data)
+  }
+  if (skipEqual && !update) {
+    throw new TypeError('`skipEqual` allowed only with update')
+  }
 
-sql.insertOne = (table, data) => new Sql(toValue => `
-  INSERT INTO "${toName(table)}"
-  (${Object.keys(data).map(toName)})
-  VALUES (${Object.values(data).map(toValue)})
-`)
+  const tableName = toName(intoTable)
+  const colNames = columns.map(toName)
 
-const upsert = ({ onConflictDo, onlyIfDistinct = false }) => (table, filter, data) => new Sql(toValue => {
-  let text = sql.insertOne(table, { ...filter, ...data })._compile(toValue)
+  let text = `INSERT INTO ${toName(tableName)} (${colNames}) VALUES\n(`
 
-  text += `\nON CONFLICT (${Object.keys(filter).map(toName)}) DO ${onConflictDo}`
+  if (isArray(data)) {
+    const valuesFromObject = obj => columns.map(k => toLiteral(obj[k])).join(',')
+    text += data.map(valuesFromObject).join('),\n(')
+  } else {
+    text += columns.map(k => toValue(data[k]))
+  }
 
-  if (onConflictDo === 'UPDATE') {
-    const tableName = toName(table)
-    const colNames = Object.keys(data).map(toName)
+  text += ')'
 
-    text += `\nSET ${colNames.map(colName => `${colName} = Excluded.${colName}`)}`
+  if (onConflict != null) {
+    const conflictIdentifiers = isArray(onConflict) ? onConflict : [onConflict]
+    const conflict = conflictIdentifiers.map(toName).join(',')
 
-    if (onlyIfDistinct) {
-      const distinctCondition = colNames
-      .map(colName => `${tableName}.${colName} IS DISTINCT FROM Excluded.${colName}`)
-      .join(' OR ')
+    text += `\nON CONFLICT (${conflict}) DO ${update ? 'UPDATE' : 'NOTHING'}`
 
-      text += `\nWHERE (${distinctCondition})`
+    if (update) {
+      if (!isArray(update)) {
+        if (update !== true) throw new TypeError('invalid `update` option')
+        update = columns.filter(col => !conflictIdentifiers.includes(col))
+      }
+
+      const updateNames = update.map(toName)
+      const updateSets = updateNames.map(colName => `${colName} = Excluded.${colName}`)
+
+      text += `\nSET ${updateSets}`
+
+      if (skipEqual) {
+        const isDistinct = updateNames
+        .map(colName => `${tableName}.${colName} IS DISTINCT FROM Excluded.${colName}`)
+        .join(' OR ')
+
+        text += `\nWHERE ${isDistinct}`
+      }
+    } else if (update == null) {
+      throw new TypeError('`onConflict` option requires `update`')
     }
+  } else if (update != null) {
+    throw new TypeError('`update` option requires `onConflict`')
+  }
+
+  if (returning) {
+    const returnText = returning === '*' ? '*' : returning.map(toName)
+    text += `RETURNING ${returnText}`
   }
 
   return text
 })
-
-sql.upsert = upsert({ onConflictDo: 'UPDATE' })
-sql.upsertIfMissing = upsert({ onConflictDo: 'NOTHING' })
-sql.upsertIfDistinct = upsert({ onConflictDo: 'UPDATE', onlyIfDistinct: true })
 
 module.exports = {
   sql,

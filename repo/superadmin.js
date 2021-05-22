@@ -68,29 +68,34 @@ const getById = (resource) => {
 
 const remove = (resource) => {
   return async (id) => {
-    return db.sql`DELETE FROM "${resource}" WHERE id = ${id}`
+    await db.sql`DELETE FROM "${resource}" WHERE id = ${id}`
   }
 }
 
 const create = (resource) => {
   const { prepare } = resourceMaps[resource]
   return async (data) => {
-    const [item] = await db.sql`
-      ${sql.insertOne(resource, prepare(data))}
-      RETURNING id
-    `
+    const [item] = await db.insert({
+      intoTable: resource,
+      data: prepare(data),
+      returning: ['id'],
+    })
+
     return item
   }
 }
 
 const update = (resource) => {
-  const { prepare } = resourceMaps[resource]
+  const { prepare, map } = resourceMaps[resource]
   return async (id, data) => {
-    const [row] = await db.sql`
-      ${sql.update(resource, { id }, prepare(data))}
-      RETURNING id
-    `
-    return row
+    const [row] = await db.update({
+      table: resource,
+      where: { id },
+      set: prepare(data),
+      returning: '*',
+    })
+
+    return map(row)
   }
 }
 
