@@ -96,22 +96,24 @@ sql.update = ({
     condition = `(${condition}) AND (${isDistinct})`
   }
 
-  if (returning && returning !== '*') {
-    returning = returning.map(toName)
-  }
-
-  return `
+  let text = `
     UPDATE ${toName(table)}
     SET ${names.map((name, i) => `${name} = ${values[i]}`)}
     WHERE ${condition}
-    ${returning ? `RETURNING ${returning}` : ''}
   `
+
+  if (returning) {
+    const returnText = returning === '*' ? '*' : returning.map(toName)
+    text += `\nRETURNING ${returnText}`
+  }
+
+  return text
 })
 
 sql.insert = ({
   intoTable, // string
   data, // object | object[]
-  columns = Object.keys(data), // string[]
+  columns = undefined, // string[] | undefined
   onConflict = undefined, // string | string[] | undefined
   update = undefined, // boolean | string[] | undefined
   skipEqual = false, // boolean
@@ -128,9 +130,10 @@ sql.insert = ({
   const tableName = toName(intoTable)
   const colNames = columns.map(toName)
 
-  let text = `INSERT INTO ${toName(tableName)} (${colNames}) VALUES\n(`
+  let text = `INSERT INTO ${tableName} (${colNames}) VALUES\n(`
 
   if (isArray(data)) {
+    // Inline literals for multiple records to avoid too many parameters
     const valuesFromObject = obj => columns.map(k => toLiteral(obj[k])).join(',')
     text += data.map(valuesFromObject).join('),\n(')
   } else {
@@ -172,7 +175,7 @@ sql.insert = ({
 
   if (returning) {
     const returnText = returning === '*' ? '*' : returning.map(toName)
-    text += `RETURNING ${returnText}`
+    text += `\nRETURNING ${returnText}`
   }
 
   return text
