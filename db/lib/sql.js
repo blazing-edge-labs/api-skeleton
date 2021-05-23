@@ -111,9 +111,9 @@ sql.update = ({
 })
 
 sql.insert = ({
-  intoTable, // string
-  data, // object | object[]
+  into, // string
   columns = undefined, // string[] | undefined
+  data, // object | object[]
   onConflict = undefined, // string | string[] | undefined
   update = undefined, // boolean | string[] | undefined
   skipEqual = false, // boolean
@@ -127,7 +127,7 @@ sql.insert = ({
     throw new TypeError('`skipEqual` allowed only with update')
   }
 
-  const tableName = toName(intoTable)
+  const tableName = toName(into)
   const colNames = columns.map(toName)
 
   let text = `INSERT INTO ${tableName} (${colNames}) VALUES\n(`
@@ -144,9 +144,9 @@ sql.insert = ({
 
   if (onConflict != null) {
     const conflictIdentifiers = isArray(onConflict) ? onConflict : [onConflict]
-    const conflict = conflictIdentifiers.map(toName).join(',')
+    const conflictTarget = conflictIdentifiers.map(toName).join(',')
 
-    text += `\nON CONFLICT (${conflict}) DO ${update ? 'UPDATE' : 'NOTHING'}`
+    text += `\nON CONFLICT (${conflictTarget}) DO ${update ? 'UPDATE' : 'NOTHING'}`
 
     if (update) {
       if (!isArray(update)) {

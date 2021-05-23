@@ -73,15 +73,15 @@ const remove = (resource) => {
 }
 
 const create = (resource) => {
-  const { prepare } = resourceMaps[resource]
+  const { prepare, map } = resourceMaps[resource]
   return async (data) => {
     const [item] = await db.insert({
-      intoTable: resource,
+      into: resource,
       data: prepare(data),
       returning: ['id'],
     })
 
-    return item
+    return map(item)
   }
 }
 
