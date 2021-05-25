@@ -1,5 +1,5 @@
 const test = require('test')
-const { all } = require('utils/promise')
+const { asyncMap } = require('utils/promise')
 const { mapper, loader } = require('./base')
 const { db } = require('db')
 
@@ -25,8 +25,8 @@ test('loader', async t => {
     group: 'group_num',
   })
 
-  const loadByIdWith = loader.selectOne({ from: 'test_loader', by: 'id', map })
-  const loadByGroupWith = loader.selectAll({ from: 'test_loader', by: 'group_num', where: '"id" > 5 ORDER BY "id" DESC', map })
+  const loadByIdWith = loader.one({ from: 'test_loader', by: 'id', map })
+  const loadByGroupWith = loader.all({ from: 'test_loader', where: '-__ = -"group_num" AND "id" > 5', orderBy: '"id"', map })
 
   const loadById = loadByIdWith(db)
   const promise = loadById(8)
@@ -39,7 +39,7 @@ test('loader', async t => {
 
   const loadByGroup = loadByGroupWith(db)
   t.ok(loadByGroup === loadByGroupWith(db), 'for same DB, loaderWith should return same loader')
-  t.deepEqual((await loadByGroup(2)).sort((a, b) => a.id - b.id), [
+  t.deepEqual(await loadByGroup(2), [
     { id: 6, group: 2 },
     { id: 7, group: 2 },
   ])
@@ -52,23 +52,24 @@ test('loader', async t => {
     const promise3 = txLoadById(8)
     t.ok(promise3 !== promise2, 'loader cache should differ for different t')
     t.ok(txLoadById === loadByIdWith(tx), 'for same tx, loaderWith should return same loader')
+    t.ok(txLoadById !== loadByIdWith.lockFor('UPDATE')(tx), 'for same tx, but different lock, loaderWith should return different loader')
     t.deepEqual(await promise3, { id: 8, group: 3 })
     const promise4 = txLoadById(8)
     t.ok(promise3 !== promise4, 'after loading, it should not be cached any more')
     await promise4
 
-    t.deepEqual(await all([1, 7, 3, 5], txLoadById), [
+    t.deepEqual(await asyncMap([1, 7, 3, 5], txLoadById), [
       { id: 1, group: 1 },
       { id: 7, group: 2 },
       { id: 3, group: 1 },
       { id: 5, group: 1 },
     ])
 
-    t.deepEqual(await all([1, 2, 3], loadByGroupWith(tx)), [
+    t.deepEqual(await asyncMap([1, 2, 3], loadByGroupWith(tx)), [
       [],
       [
-        { id: 7, group: 2 },
         { id: 6, group: 2 },
+        { id: 7, group: 2 },
       ],
       [
         { id: 8, group: 3 },
