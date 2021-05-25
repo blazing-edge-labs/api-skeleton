@@ -83,28 +83,25 @@ sql.update = ({
   returning = undefined, // '*' | string[] | undefined
 }) => new Sql(toValue => {
   const conditionSql = where instanceof Sql ? where : sql.cond(where)
-  let condition = conditionSql._compile(toValue)
+  const condition = conditionSql._compile(toValue)
 
   const names = Object.keys(set).map(toName)
   const values = Object.values(set).map(toValue)
 
-  if (skipEqual) {
-    const isDistinct = names
-    .map((name, i) => `${name} IS DISTINCT FROM ${values[i]}`)
-    .join(' OR ')
+  let text = `UPDATE ${toName(table)}\n`
+  text += `SET ${names.map((name, i) => `${name} = ${values[i]}`)}\n`
+  text += `WHERE (${condition})\n`
 
-    condition = `(${condition}) AND (${isDistinct})`
+  if (skipEqual) {
+    text += '  AND ('
+    text += names.map((name, i) => `${name} IS DISTINCT FROM ${values[i]}`).join(' OR ')
+    text += ')\n'
   }
 
-  let text = `
-    UPDATE ${toName(table)}
-    SET ${names.map((name, i) => `${name} = ${values[i]}`)}
-    WHERE ${condition}
-  `
-
   if (returning) {
-    const returnText = returning === '*' ? '*' : returning.map(toName)
-    text += `\nRETURNING ${returnText}`
+    text += 'RETURNING '
+    text += returning === '*' ? '*' : returning.map(toName)
+    text += '\n'
   }
 
   return text
@@ -140,13 +137,13 @@ sql.insert = ({
     text += columns.map(k => toValue(data[k]))
   }
 
-  text += ')'
+  text += ')\n'
 
   if (onConflict != null) {
     const conflictIdentifiers = isArray(onConflict) ? onConflict : [onConflict]
     const conflictTarget = conflictIdentifiers.map(toName).join(',')
 
-    text += `\nON CONFLICT (${conflictTarget}) DO ${update ? 'UPDATE' : 'NOTHING'}`
+    text += `ON CONFLICT (${conflictTarget}) DO ${update ? 'UPDATE' : 'NOTHING'}\n`
 
     if (update) {
       if (!isArray(update)) {
@@ -155,16 +152,17 @@ sql.insert = ({
       }
 
       const updateNames = update.map(toName)
-      const updateSets = updateNames.map(colName => `${colName} = Excluded.${colName}`)
 
-      text += `\nSET ${updateSets}`
+      text += 'SET '
+      text += updateNames.map(colName => `${colName} = Excluded.${colName}`)
+      text += '\n'
 
       if (skipEqual) {
-        const isDistinct = updateNames
+        text += 'WHERE '
+        text += updateNames
         .map(colName => `${tableName}.${colName} IS DISTINCT FROM Excluded.${colName}`)
         .join(' OR ')
-
-        text += `\nWHERE ${isDistinct}`
+        text += '\n'
       }
     } else if (update == null) {
       throw new TypeError('`onConflict` option requires `update`')
@@ -174,8 +172,9 @@ sql.insert = ({
   }
 
   if (returning) {
-    const returnText = returning === '*' ? '*' : returning.map(toName)
-    text += `\nRETURNING ${returnText}`
+    text += 'RETURNING '
+    text += returning === '*' ? '*' : returning.map(toName)
+    text += '\n'
   }
 
   return text
