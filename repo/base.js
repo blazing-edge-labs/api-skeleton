@@ -3,6 +3,7 @@ const assert = require('assert')
 const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
 const { as } = require('db').pgp
+const { db: _db } = require('db')
 
 const kMapItem = Symbol('mapItem')
 
@@ -33,42 +34,68 @@ function mapper (mapping) {
   return map
 }
 
-function loader (batchResolverWith, { batchMaxSize = 1000, ...notAllowed } = {}) {
-  assert(batchResolverWith.length === 1, 'batchResolver creator must be a function with single argument')
+function loader (resolveKeysWith, { db = _db, mapKey, batchMaxSize = 1000, ...notAllowed } = {}) {
   assert.deepEqual(notAllowed, {}, 'Invalid options')
-  return memoRefIn(new WeakMap(), t => createLoader(batchResolverWith(t), { batchMaxSize }))
-}
 
-loader.withLocking = (batchResolverWithLocking, loaderOptions) => {
-  assert(batchResolverWithLocking.length === 1, 'batchResolverWithLocking creator must be a function with single argument')
+  const loaderWith = memoRefIn(new Map(), locking => {
+    if (locking) {
+      assert(resolveKeysWith.length >= 2, 'Loader not supporting locking')
+      assert(locking.startsWith('FOR '), 'Locking Clause expected to start with "FOR "')
+    }
+    const options = { mapKey, batchMaxSize }
+    return memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db, locking), options))
+  })
 
-  const loadWith = loader(batchResolverWithLocking(''), loaderOptions)
+  const loaderWithNoLocking = loaderWith('')
+  const load = loaderWithNoLocking(db)
 
-  loadWith.lockFor = memoRefIn(new Map(), lockType => loader(batchResolverWithLocking(`FOR ${lockType}`), loaderOptions))
+  load.using = (db, locking) => locking
+    ? loaderWith(locking)(db)
+    : loaderWithNoLocking(db)
 
-  return loadWith
+  return load
 }
 
 const asValue = x => as.csv([x])
 
-const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map = identity }) => {
-  const keyName = by || '__'
-  const table = as.name(from)
-  const keyColumn = as.name(keyName)
-  const mapItem = map[kMapItem] || map
+const reWord = /^[a-zA-Z]\w*$/
 
-  if (!!by === /\b__\b/.test(where)) {
-    assert(by, 'With no "by", you need to use "__" in "where"')
-    assert(!by, 'You can not use both "by" and "__" in "where"')
+const sqlLoaderBuilder = ({ multi }) => ({
+  select = '*',
+  from,
+  by = '',
+  where = '',
+  orderBy = '',
+  map = identity,
+  ...rest
+}) => {
+  assert(from, '"from" is required')
+  assert(!by === /\b__\b/.test(where), '"by", xor use of `__` in "where", is required')
+
+  const mapItem = map[kMapItem] || map
+  const simpleSel = reWord.test(by) && select === '*'
+  const keyName = simpleSel ? by : '__'
+
+  if (reWord.test(by)) by = as.name(by)
+  if (reWord.test(from)) from = as.name(from)
+  if (reWord.test(select)) select = as.name(select)
+  if (reWord.test(orderBy)) orderBy = as.name(orderBy)
+
+  if (by && !simpleSel) {
+    select += `, ${by} AS __`
   }
 
-  return loader.withLocking(locking => db => async keys => {
+  if (!by && select !== '*' && select !== '__') {
+    select += ', __'
+  }
+
+  return loader((db, locking) => async keys => {
     let r
 
     if (!by) {
       r = await db.any(`
-        SELECT *
-        FROM (VALUES (${keys.map(asValue).join('),(')})) AS t (__), ${table}
+        SELECT ${select}
+        FROM (VALUES (${keys.map(asValue).join('),(')})) __t (__), ${from}
         WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}
@@ -77,8 +104,9 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
       r = []
     } else {
       r = await db.any(`
-        SELECT * FROM ${table}
-        WHERE ${keyColumn} IN (${as.csv(keys)})
+        SELECT ${select}
+        FROM ${from}
+        WHERE ${by} IN (${as.csv(keys)})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}
@@ -95,11 +123,11 @@ const _loader = ({ multi }) => ({ from, by = '', where = '', orderBy = '', map =
     return multi
       ? keys.map(byGrouped(r, keyName, mapItem))
       : keys.map(byKeyed(r, keyName, mapItem, null))
-  })
+  }, rest)
 }
 
-loader.one = _loader({ multi: false })
-loader.all = _loader({ multi: true })
+loader.one = sqlLoaderBuilder({ multi: false })
+loader.all = sqlLoaderBuilder({ multi: true })
 
 module.exports = {
   mapper,
