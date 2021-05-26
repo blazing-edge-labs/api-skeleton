@@ -7,7 +7,7 @@ const getValidationErrorSchemaByKey = (validationKey, description) => ({
   properties: {
     error: {
       type: 'string',
-      description
+      description,
     },
     code: {
       type: 'integer',
@@ -109,7 +109,7 @@ function formatErrorsWithTomlErrors (errorConstantObjs) {
     if (model === '_validation') {
       errorResponses[errorConstantObj.status].push(getValidationErrorSchemaByKey(
         errorConstant,
-        'http.bad_request'
+        'http.bad_request',
       ))
       return
     }
