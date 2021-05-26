@@ -5,6 +5,9 @@ not_found = 404
 duplicate = 409
 internal = 500
 
+[docs]
+missing_code = 100
+
 [db]
 connection = 1000
 read = 1000

@@ -11,6 +11,7 @@ const passwordTokenRepo = require('repo/passwordToken')
 const roleUser = require('middleware/roleUser')
 const userRepo = require('repo/user')
 const validate = require('middleware/validate')
+const errorValidation = require('middleware/errorValidation')
 
 // signup & passwordless login
 router.post('/signin',
@@ -43,6 +44,10 @@ router.post('/auth',
     password: joi.string().required(),
     minRole: joi.any().valid(..._.values(konst.roleUser)).optional(),
   }),
+  errorValidation([{
+    error: 'user.password_wrong',
+    status: 400,
+  }]),
   async function (ctx) {
     const { email, password, minRole } = ctx.v.body
     const user = await userRepo.getByEmailPassword(email, password)

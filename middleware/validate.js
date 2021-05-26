@@ -1,6 +1,7 @@
 const _ = require('lodash')
 const joi = require('joi')
 
+const docsLib = require('docs/api/lib')
 const error = require('error')
 
 const defaults = {
@@ -13,7 +14,7 @@ function validator (path, target, schema, options = {}) {
   const opts = _.defaults(options, defaults)
   const schemaCompiled = joi.compile(schema)
 
-  return async function (ctx, next) {
+  const _validator = async function (ctx, next) {
     const input = _.get(ctx, path)
 
     const { error: err, value: data } = schemaCompiled.validate(input, opts)
@@ -26,6 +27,10 @@ function validator (path, target, schema, options = {}) {
 
     await next()
   }
+
+  _.set(_validator, [docsLib.propSymbols.validation, target], schema)
+
+  return _validator
 }
 
 module.exports = {

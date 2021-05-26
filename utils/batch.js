@@ -2,7 +2,7 @@ const { memoRefIn } = require('utils/data')
 
 const defaultScheduler = job => Promise.resolve(job).then(process.nextTick)
 
-function createLoader (resolveBatch, { batchMaxSize = 1000, cache = new Map(), autoClearCache = !!cache, schedule = defaultScheduler } = {}) {
+function createLoader (resolveKeys, { mapKey, batchMaxSize = 1000, cache = new Map(), autoClearCache = !!cache, schedule = defaultScheduler } = {}) {
   let queued = []
   let nextKey
 
@@ -25,7 +25,7 @@ function createLoader (resolveBatch, { batchMaxSize = 1000, cache = new Map(), a
 
   const processBatch = async (batch) => {
     try {
-      const results = await resolveBatch(batch.map(it => it.key))
+      const results = await resolveKeys(batch.map(it => it.key))
       batch.forEach((it, i) => it.resolve(results[i]))
     } catch (error) {
       const rejection = Promise.reject(error)
@@ -45,9 +45,13 @@ function createLoader (resolveBatch, { batchMaxSize = 1000, cache = new Map(), a
     return new Promise(pushResolver)
   }
 
-  return cache
+  const addKey = cache
     ? memoRefIn(cache, batch)
     : batch
+
+  return mapKey
+    ? key => addKey(mapKey(key))
+    : addKey
 }
 
 module.exports = {

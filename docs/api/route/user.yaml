@@ -1,0 +1,9 @@
+/changePassword:
+  post:
+    responses:
+      200:
+        description: Successfully changed password
+        content:
+          application/json:
+            schema:
+              type: object

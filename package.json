@@ -15,6 +15,8 @@
     "crypto-random-string": "^3.2.0",
     "dotenv-safe": "^8.2.0",
     "joi": "^17.2.1",
+    "joi-to-swagger": "^5.0.1",
+    "js-yaml": "^3.14.0",
     "jsonwebtoken": "^8.5.1",
     "kcors": "^2.2.2",
     "koa": "^2.11.0",
@@ -25,12 +27,15 @@
     "koa-jwt": "^3.6.0",
     "koa-response-time": "^2.1.0",
     "koa-router": "^8.0.8",
-    "lodash": "^4.17.19",
+    "koa-send": "^5.0.0",
+    "lodash": "^4.17.21",
     "nested-error-stacks": "^2.1.0",
-    "nodemailer": "^6.4.6",
+    "nodemailer": "^6.4.16",
     "npm-run-all": "^4.1.5",
     "pg": "^8.6.0",
-    "postgres-migrations": "^5.1.1"
+    "postgres-migrations": "^5.1.1",
+    "redoc-cli": "^0.9.8",
+    "swagger-ui-dist": "^3.25.3"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
@@ -50,6 +55,10 @@
     "yarn": "1"
   },
   "scripts": {
+    "docs:build": "NODE_PATH=. node -r ./env.js ./docs/api/index.js",
+    "docs:bundle": "redoc-cli bundle docs/api/docs.json",
+    "docs:build:bundle": "run-s docs:build docs:bundle",
+    "docs:serve:watch": "redoc-cli serve docs/api/docs.json --watch",
     "ci": "run-s lint coverage",
     "dev": "NODE_PATH=. node-dev --no-notify index.js",
     "lint": "eslint .",
