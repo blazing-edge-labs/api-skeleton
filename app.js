@@ -12,7 +12,7 @@ app.use(require('koa-bodyparser')())
 app.use(require('middleware/error'))
 
 // needs to be on top because of responder
-if (JSON.parse(process.env.SERVE_DOCS)) {
+if (JSON.parse(process.env.SERVE_DOCS || 'false')) {
   router.get('/docs', async function (ctx) {
     await send(ctx, 'redoc-static.html')
   })
