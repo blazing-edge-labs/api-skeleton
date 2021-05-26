@@ -141,7 +141,7 @@ Now, not only we have certainty that login emails are unique using the index abo
 // in repo/products.js
 
 const loadByUserId = loader.all({
-  select: `DISTINCT ON (p.id, __) p.*`,
+  select: `DISTINCT ON (p.id, o."user_id") p.*`,
   from: `"order" o, "product" p`,
   where: `__::int = o."user_id" AND p."order_id" = o."id"`,
   orderBy: `"price" DESC`,
@@ -155,7 +155,7 @@ or
 // in repo/products.js
 
 const loadByUserId = loader.all({
-  select: `DISTINCT ON (p.id, __) p.*`,
+  select: `DISTINCT ON (p.id, o."user_id") p.*`,
   from: `"order" o,
     JOIN "product" p ON p."order_id" = o."id"`,
   by: `o."user_id"`,
