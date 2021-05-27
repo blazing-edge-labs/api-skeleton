@@ -17,6 +17,10 @@ class Sql {
     const text = this._compile(val => `$${values.push(val)}`)
     return { name, text, values }
   }
+
+  toJSON () {
+    throw new Error('Not allowed to stringify an Sql')
+  }
 }
 
 const sql = ({ raw }, ...params) => new Sql(toValue => {
