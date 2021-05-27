@@ -100,28 +100,24 @@ const sqlLoaderBuilder = ({ multi }) => ({
   }
 
   return loader((db, locking) => async keys => {
-    let r
-
-    if (!by) {
-      r = await db.query(`
-        SELECT ${select}
-        FROM (VALUES (${keys.map(toLiteral).join('),(')})) __t (__), ${from}
-        WHERE ${where}
-        ${orderBy && `ORDER BY ${orderBy}`}
-        ${locking}
-      `)
-    } else if (keys.length === 1 && keys[0] === null) {
-      r = []
-    } else {
-      r = await db.query(`
+    const text = by
+      ? `
         SELECT ${select}
         FROM ${from}
         WHERE ${by} IN (${keys.map(toLiteral)})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}
-      `)
-    }
+      `
+      : `
+        SELECT ${select}
+        FROM (VALUES (${keys.map(toLiteral).join('),(')})) __t (__), ${from}
+        WHERE ${where}
+        ${orderBy && `ORDER BY ${orderBy}`}
+        ${locking}
+      `
+
+    const r = await db.query({ text })
 
     // Minor optimization for single key case
     if (keys.length === 1) {

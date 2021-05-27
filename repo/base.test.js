@@ -4,7 +4,7 @@ const { mapper, loader } = require('./base')
 const { db } = require('db')
 
 test('loader', async t => {
-  await db.query(`
+  await db.sql`
     CREATE TABLE test_loader (
       id int,
       group_num int
@@ -18,7 +18,7 @@ test('loader', async t => {
     (6, 2),
     (7, 2),
     (8, 3);
-  `)
+  `
 
   const map = mapper({
     id: 'id',
@@ -104,5 +104,5 @@ test('loader', async t => {
     t.is(await loadWithImplicitJoin(2), 3)
   }
 
-  await db.query('DROP TABLE test_loader')
+  await db.sql`DROP TABLE test_loader`
 })
