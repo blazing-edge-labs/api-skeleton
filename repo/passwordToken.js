@@ -3,7 +3,7 @@ const randomString = require('crypto-random-string')
 
 const error = require('error')
 const userRepo = require('repo/user')
-const { db } = require('db')
+const { db, sql } = require('db')
 
 async function create (userId) {
   await remove(userId)
@@ -37,7 +37,7 @@ async function get (token) {
     FROM password_token
     WHERE
       token = ${token}
-      AND created_at > now() - interval '${hoursDur} hour'
+      AND created_at > now() - interval '${sql.raw(hoursDur)} hour'
   `
 
   if (!row) throw error('user.password_token_invalid')
