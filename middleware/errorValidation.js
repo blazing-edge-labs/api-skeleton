@@ -18,7 +18,7 @@ function errorValidation (errorConstants = []) {
       }
 
       // TODO maybe this should be an internal error or validation one?
-      throw error('http.internal', err)
+      throw errors('http.internal', err)
     }
   }
   _.set(_errorValidation, [docsLib.propSymbols.error], errorConstants)

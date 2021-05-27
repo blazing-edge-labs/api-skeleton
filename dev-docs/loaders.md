@@ -180,7 +180,7 @@ const loadFullName = loader((db, lockingClause) => async userIds => {
   const rows = await db.sql`
     SELECT id, (first_name || ' ' || last_name) as "fullName"
     FROM "user"
-    WHERE id IN (${sql.values(userIds)})
+    WHERE id = ANY (${userIds})
     ${sql.raw(lockingClause)} // <- remember to use the second argument
   `
 

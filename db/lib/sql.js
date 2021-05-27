@@ -23,7 +23,7 @@ const sql = ({ raw }, ...params) => new Sql(toValue => {
   let text = raw[0]
 
   for (let i = 0; i < params.length;) {
-    const param = params[0]
+    const param = params[i]
 
     if (param instanceof Sql) {
       text += param._compile(toValue)

@@ -44,10 +44,16 @@ router.post('/auth',
     password: joi.string().required(),
     minRole: joi.any().valid(..._.values(konst.roleUser)).optional(),
   }),
-  errorValidation([{
-    error: 'user.password_wrong',
-    status: 400,
-  }]),
+  errorValidation([
+    {
+      error: 'user.password_wrong',
+      status: 400,
+    },
+    {
+      error: 'role.insufficient',
+      status: 401,
+    },
+  ]),
   async function (ctx) {
     const { email, password, minRole } = ctx.v.body
     const user = await userRepo.getByEmailPassword(email, password)

@@ -3,7 +3,7 @@ const { asyncMap } = require('utils/promise')
 const { mapper, loader } = require('./base')
 const { db } = require('db')
 
-test.only('loader', async t => {
+test('loader', async t => {
   await db.query(`
     CREATE TABLE test_loader (
       id int,
