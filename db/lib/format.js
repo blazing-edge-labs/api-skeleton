@@ -2,6 +2,8 @@ const { isDate } = require('util').types
 const { isArray } = Array
 const { isBuffer } = Buffer
 
+const escapeDoubleQuotes = str => str.replace(/"/g, '""')
+
 function toLiteral (value) {
   switch (typeof value) {
     case 'string':
@@ -27,10 +29,11 @@ function toLiteral (value) {
 
 function toIdentifier (value) {
   const str = String(value)
-  return str.length === 1 && /^[a-z]$/.test(str) ? str : `"${str.replace(/"/g, '""')}"`
+  return str.length === 1 && /^[a-z]$/.test(str) ? str : `"${escapeDoubleQuotes(str)}"`
 }
 
 module.exports = {
   toLiteral,
   toIdentifier,
+  escapeDoubleQuotes,
 }

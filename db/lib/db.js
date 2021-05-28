@@ -1,4 +1,5 @@
 const { Queue } = require('utils/data')
+const { sql: _sql, Sql } = require('./sql')
 
 class Database {
   constructor (pool, opts) {
@@ -6,9 +7,15 @@ class Database {
     this._opts = opts
   }
 
-  async query (query, values) {
+  async query (query) {
+    if (typeof query === 'string') {
+      throw new TypeError('query: simple string not allowed. Use .sql`...` or .query({ text: \'SELECT ...\' })')
+    }
+    if (query instanceof Sql) {
+      query = query.toPlainQuery()
+    }
     try {
-      const { rows } = await this._runQuery(query, values)
+      const { rows } = await this._runQuery(query)
       return rows
     } catch (e) {
       if (this._opts.queryErrorHandler) {
@@ -16,6 +23,18 @@ class Database {
       }
       throw e
     }
+  }
+
+  sql (...args) {
+    return this.query(_sql(...args))
+  }
+
+  update (options) {
+    return this.query(_sql.update(options))
+  }
+
+  insert (options) {
+    return this.query(_sql.insert(options))
   }
 
   task (fn) {
@@ -26,8 +45,8 @@ class Database {
     return this._runTask(fn, true)
   }
 
-  _runQuery (query, values) {
-    return this.pool.query(query, values)
+  _runQuery (query) {
+    return this.pool.query(query)
   }
 
   async _runTask (fn, isTx) {
@@ -76,17 +95,17 @@ class Task extends Database {
     })
   }
 
-  async _runQuery (query, values) {
+  async _runQuery (query) {
     if (!this.client) {
       throw new Error('running query in finished task/tx')
     }
     if (this._pending === -1) {
-      return this._pushMethodCall(this._runQuery, query, values)
+      return this._pushMethodCall(this._runQuery, query)
     }
 
     ++this._pending
     try {
-      return await this.client.query(query, values)
+      return await this.client.query(query)
     } finally {
       if (--this._pending === 0) {
         process.nextTick(this._next)

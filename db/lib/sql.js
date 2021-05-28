@@ -1,6 +1,5 @@
+const { toLiteral, escapeDoubleQuotes } = require('./format')
 const { isArray } = Array
-
-const escapeDoubleQuotes = str => str.replace(/"/g, '""')
 
 const formatNames = xs => `"${xs.map(escapeDoubleQuotes).join('","')}"`
 const formatValueWith = toValue => x => x instanceof Sql ? x._compile(toValue) : toValue(x)
@@ -10,28 +9,15 @@ class Sql {
     this._compile = compile
   }
 
+  toPlainQuery () {
+    return this._compile(toLiteral)
+  }
+
   toPgQuery () {
     const values = []
     const text = this._compile(val => `$${values.push(val)}`)
     return { text, values }
   }
-
-  // toPgQueryCompact () {
-  //   let i = 0
-  //   const map = new Map()
-  //   const text = this._compile(val => '$' + (map.get(val) || map.set(val, ++i).get(val)))
-  //   const values = [...map.values()]
-  //   return { text, values }
-  // }
-
-  // toMsQuery () {
-  //   const values = []
-  //   const query = this._compile(val => {
-  //     values.push(val)
-  //     return '?'
-  //   })
-  //   return { query, values }
-  // }
 
   toJSON () {
     throw new Error('Not allowed to stringify an Sql')
