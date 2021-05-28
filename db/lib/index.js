@@ -12,7 +12,9 @@ class Database {
       throw new TypeError('query: simple string not allowed. Use .sql`...` or .query({ text: \'SELECT ...\' })')
     }
     if (query instanceof Sql) {
-      query = query.toPlainQuery()
+      query = this._opts.parseOnServer
+        ? query.toPgQuery()
+        : query.toPlainQuery()
     }
     try {
       const { rows } = await this._runQuery(query)
