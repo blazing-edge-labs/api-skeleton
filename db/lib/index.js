@@ -195,7 +195,6 @@ function bindAsyncCallStack (fn, toFn, header = 'After:') {
 }
 
 module.exports = {
-  sql: _sql,
-  Sql,
   Database,
+  Task,
 }

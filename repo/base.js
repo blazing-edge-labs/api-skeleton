@@ -2,8 +2,7 @@ const assert = require('assert')
 
 const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
-const { db: _db, Sql } = require('db')
-const { toIdentifier, toLiteral } = require('db/lib/format')
+const { db: _db, Sql, format } = require('db')
 
 const kMapItem = Symbol('mapItem')
 
@@ -61,12 +60,12 @@ const reWord = /^[a-zA-Z]\w*$/
 const asCode = x => {
   if (!x) return ''
   if (x instanceof Sql) return x.toPlainQuery()
-  if (reWord.test(x)) return toIdentifier(x)
+  if (reWord.test(x)) return format.toIdentifier(x)
   return String(x)
 }
 
 const asNamesOrCode = x => Array.isArray(x)
-  ? x.map(toIdentifier).join(',')
+  ? x.map(format.toIdentifier).join(',')
   : asCode(x)
 
 const sqlLoaderBuilder = ({ multi }) => ({
@@ -103,14 +102,14 @@ const sqlLoaderBuilder = ({ multi }) => ({
       ? `
         SELECT ${select}
         FROM ${from}
-        WHERE ${by} IN (${keys.map(toLiteral)})
+        WHERE ${by} IN (${keys.map(format.toLiteral)})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}
       `
       : `
         SELECT ${select}
-        FROM (VALUES (${keys.map(toLiteral).join('),(')})) __t (__), ${from}
+        FROM (VALUES (${keys.map(format.toLiteral).join('),(')})) __t (__), ${from}
         WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking}

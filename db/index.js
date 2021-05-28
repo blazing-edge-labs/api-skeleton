@@ -2,7 +2,8 @@ const { Pool, types } = require('pg')
 
 const error = require('error')
 
-const { Database, sql, Sql } = require('db/lib')
+const { Database } = require('db/lib')
+const { sql, Sql } = require('db/lib/sql')
 const format = require('db/lib/format')
 
 // https://github.com/brianc/node-pg-types/issues/50
