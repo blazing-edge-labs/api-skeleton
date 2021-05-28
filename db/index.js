@@ -1,7 +1,9 @@
 const { Pool, types } = require('pg')
 
-const { Database, sql } = require('db/lib')
 const error = require('error')
+
+const { Database, sql, Sql } = require('db/lib')
+const format = require('db/lib/format')
 
 // https://github.com/brianc/node-pg-types/issues/50
 const DATE_OID = 1082
@@ -23,4 +25,7 @@ const db = new Database(pool, {
 module.exports = {
   db,
   sql,
+  format,
+  Database,
+  Sql,
 }

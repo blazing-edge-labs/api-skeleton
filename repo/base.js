@@ -2,9 +2,8 @@ const assert = require('assert')
 
 const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
-const { db: _db } = require('db')
+const { db: _db, Sql } = require('db')
 const { toIdentifier, toLiteral } = require('db/lib/format')
-const { Sql } = require('db/lib/sql')
 
 const kMapItem = Symbol('mapItem')
 
@@ -61,7 +60,7 @@ const reWord = /^[a-zA-Z]\w*$/
 
 const asCode = x => {
   if (!x) return ''
-  if (x instanceof Sql) return x._compile(toLiteral)
+  if (x instanceof Sql) return x.toPlainQuery()
   if (reWord.test(x)) return toIdentifier(x)
   return String(x)
 }
