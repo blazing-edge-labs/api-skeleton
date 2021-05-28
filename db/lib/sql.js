@@ -69,14 +69,9 @@ sql.cond = obj => new Sql(toValue => {
 })
 
 sql.sets = obj => new Sql(toValue => {
-  return Object.keys(obj)
-  .map(key => {
-    const x = obj[key]
-    return x instanceof Sql
-      ? `("${escapeDoubleQuotes(key)}" = ${x._compile(toValue)})`
-      : `"${escapeDoubleQuotes(key)}" = ${toValue(x)}`
-  })
-  .join(', ')
+  const leftSide = formatNames(Object.keys(obj))
+  const rightSide = Object.values(obj).map(formatValueWith(toValue)).join(',')
+  return `(${leftSide}) = (${rightSide})`
 })
 
 sql.update = ({
@@ -119,21 +114,21 @@ sql.insert = ({
   skipEqual = false, // boolean
   returning = undefined, // '*' | string[] | undefined
 }) => new Sql(toValue => {
-  if (!columns) {
-    if (isArray(data)) throw new TypeError('`columns` required when `data` is an array')
-    columns = Object.keys(data)
-  }
-  if (skipEqual && !update) {
-    throw new TypeError('`skipEqual` allowed only with update')
+  if (isArray(data)) {
+    if (!columns) throw new TypeError('`columns` required when `data` is an array')
+    if (data.length === 0) throw new TypeError('inserting data is empty')
   }
 
   const unquotedTable = escapeDoubleQuotes(into)
+  let valuesBody
 
-  const valuesFromObject = obj => columns.map(k => toValue(obj[k])).join(',')
-
-  const valuesBody = isArray(data)
-    ? data.map(valuesFromObject).join('),\n(')
-    : valuesFromObject(data)
+  if (columns) {
+    const toCSV = obj => columns.map(k => toValue(obj[k])).join(',')
+    valuesBody = isArray(data) ? data.map(toCSV).join('),\n(') : toCSV(data)
+  } else {
+    columns = Object.keys(data)
+    valuesBody = Object.values(data).map(toValue).join(',')
+  }
 
   let text = `INSERT INTO "${unquotedTable}" __t (${formatNames(columns)}) VALUES\n(${valuesBody})\n`
 
@@ -160,8 +155,9 @@ sql.insert = ({
     } else if (update == null) {
       throw new TypeError('`onConflict` option requires `update`')
     }
-  } else if (update != null) {
-    throw new TypeError('`update` option requires `onConflict`')
+  } else {
+    if (update != null) throw new TypeError('`update` option requires `onConflict`')
+    if (skipEqual) throw new TypeError('`skipEqual` option requires `onConflict`')
   }
 
   if (returning) {
