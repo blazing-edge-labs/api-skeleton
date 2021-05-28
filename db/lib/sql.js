@@ -16,6 +16,23 @@ class Sql {
     return { text, values }
   }
 
+  // toPgQueryCompact () {
+  //   let i = 0
+  //   const map = new Map()
+  //   const text = this._compile(val => '$' + (map.get(val) || map.set(val, ++i).get(val)))
+  //   const values = [...map.values()]
+  //   return { text, values }
+  // }
+
+  // toMsQuery () {
+  //   const values = []
+  //   const query = this._compile(val => {
+  //     values.push(val)
+  //     return '?'
+  //   })
+  //   return { query, values }
+  // }
+
   toJSON () {
     throw new Error('Not allowed to stringify an Sql')
   }
@@ -81,12 +98,11 @@ sql.update = ({
   skipEqual = false,
   returning = undefined, // '*' | string[] | undefined
 }) => new Sql(toValue => {
-  const conditionSql = where instanceof Sql ? where : sql.cond(where)
-  const condition = conditionSql._compile(toValue)
-
-  // const names = Object.keys(set).map(toName)
   const leftSide = formatNames(Object.keys(set))
   const rightSide = Object.values(set).map(formatValueWith(toValue)).join(',')
+
+  const conditionSql = where instanceof Sql ? where : sql.cond(where)
+  const condition = conditionSql._compile(toValue)
 
   let text = `UPDATE "${escapeDoubleQuotes(table)}"\n`
   text += `SET (${leftSide}) = (${rightSide})\n`
