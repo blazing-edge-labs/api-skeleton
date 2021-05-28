@@ -61,7 +61,7 @@ const reWord = /^[a-zA-Z]\w*$/
 
 const asCode = x => {
   if (!x) return ''
-  if (x instanceof Sql) return x.source
+  if (x instanceof Sql) return x._compile(toLiteral)
   if (reWord.test(x)) return toIdentifier(x)
   return String(x)
 }

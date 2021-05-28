@@ -1,5 +1,6 @@
-const { sql, Sql } = require('./sql')
 const { Database } = require('./db')
+const { sql, Sql } = require('./sql')
+const { toLiteral } = require('./format')
 
 const originalQuery = Database.prototype.query
 
@@ -7,7 +8,7 @@ Database.prototype.query = function query (query) {
   if (typeof query === 'string') {
     throw new TypeError('query: simple string not allowed. Use .sql`...` or .query({ text: \'SELECT ...\' })')
   }
-  const arg = query instanceof Sql ? query.source : query
+  const arg = query instanceof Sql ? query._compile(toLiteral) : query
   return originalQuery.call(this, arg)
 }
 

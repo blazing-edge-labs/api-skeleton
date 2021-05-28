@@ -1,21 +1,19 @@
-const { toIdentifier: toName, toLiteral } = require('./format')
-const { isArray } = require('lodash')
+const { isArray } = Array
 
-const escapeQuotes = str => str.replace(/"/g, '""')
+const escapeDoubleQuotes = str => str.replace(/"/g, '""')
+
+const formatNames = xs => `"${xs.map(escapeDoubleQuotes).join('","')}"`
+const formatValueWith = toValue => x => x instanceof Sql ? x._compile(toValue) : toValue(x)
 
 class Sql {
   constructor (compile) {
     this._compile = compile
   }
 
-  get source () {
-    return this._compile(toLiteral)
-  }
-
-  toPgQuery (name) {
+  toPgQuery () {
     const values = []
     const text = this._compile(val => `$${values.push(val)}`)
-    return { name, text, values }
+    return { text, values }
   }
 
   toJSON () {
@@ -32,7 +30,9 @@ const sql = ({ raw }, ...params) => new Sql(toValue => {
     if (param instanceof Sql) {
       text += param._compile(toValue)
     } else if (raw[i].endsWith('"') && raw[i + 1].startsWith('"')) {
-      text += escapeQuotes(param)
+      text += isArray(param)
+        ? param.map(escapeDoubleQuotes).join('","')
+        : escapeDoubleQuotes(param)
     } else {
       text += toValue(param)
     }
@@ -51,7 +51,7 @@ sql.raw = source => {
 }
 
 sql.names = (names, sep = ',') => {
-  const code = Array.from(names, toName).join(sep)
+  const code = '"' + names.map(escapeDoubleQuotes).join(`"${sep}"`) + '"'
   return new Sql(() => code)
 }
 
@@ -62,8 +62,8 @@ sql.cond = obj => new Sql(toValue => {
   .map(key => {
     const x = obj[key]
     return x instanceof Sql
-      ? `(${toName(key)} ${x._compile(toValue)})`
-      : `${toName(key)} = ${toValue(x)}`
+      ? `("${escapeDoubleQuotes(key)}" ${x._compile(toValue)})`
+      : `"${escapeDoubleQuotes(key)}" = ${toValue(x)}`
   })
   .join(' AND ')
 })
@@ -73,8 +73,8 @@ sql.sets = obj => new Sql(toValue => {
   .map(key => {
     const x = obj[key]
     return x instanceof Sql
-      ? `(${toName(key)} = ${x._compile(toValue)})`
-      : `${toName(key)} = ${toValue(x)}`
+      ? `("${escapeDoubleQuotes(key)}" = ${x._compile(toValue)})`
+      : `"${escapeDoubleQuotes(key)}" = ${toValue(x)}`
   })
   .join(', ')
 })
@@ -89,22 +89,21 @@ sql.update = ({
   const conditionSql = where instanceof Sql ? where : sql.cond(where)
   const condition = conditionSql._compile(toValue)
 
-  const names = Object.keys(set).map(toName)
-  const values = Object.values(set).map(toValue)
+  // const names = Object.keys(set).map(toName)
+  const leftSide = formatNames(Object.keys(set))
+  const rightSide = Object.values(set).map(formatValueWith(toValue)).join(',')
 
-  let text = `UPDATE ${toName(table)}\n`
-  text += `SET ${names.map((name, i) => `${name} = ${values[i]}`)}\n`
+  let text = `UPDATE "${escapeDoubleQuotes(table)}"\n`
+  text += `SET (${leftSide}) = (${rightSide})\n`
   text += `WHERE (${condition})\n`
 
   if (skipEqual) {
-    text += '  AND ('
-    text += names.map((name, i) => `${name} IS DISTINCT FROM ${values[i]}`).join(' OR ')
-    text += ')\n'
+    text += `  AND (${leftSide}) IS DISTINCT FROM (${rightSide})`
   }
 
   if (returning) {
     text += 'RETURNING '
-    text += returning === '*' ? '*' : returning.map(toName)
+    text += returning === '*' ? '*' : formatNames(returning)
     text += '\n'
   }
 
@@ -128,26 +127,20 @@ sql.insert = ({
     throw new TypeError('`skipEqual` allowed only with update')
   }
 
-  const tableName = toName(into)
-  const colNames = columns.map(toName)
+  const unquotedTable = escapeDoubleQuotes(into)
 
-  let text = `INSERT INTO ${tableName} (${colNames}) VALUES\n(`
+  const valuesFromObject = obj => columns.map(k => toValue(obj[k])).join(',')
 
-  if (isArray(data)) {
-    // Inline literals for multiple records to avoid too many parameters
-    const valuesFromObject = obj => columns.map(k => toLiteral(obj[k])).join(',')
-    text += data.map(valuesFromObject).join('),\n(')
-  } else {
-    text += columns.map(k => toValue(data[k]))
-  }
+  const valuesBody = isArray(data)
+    ? data.map(valuesFromObject).join('),\n(')
+    : valuesFromObject(data)
 
-  text += ')\n'
+  let text = `INSERT INTO "${unquotedTable}" __t (${formatNames(columns)}) VALUES\n(${valuesBody})\n`
 
   if (onConflict != null) {
     const conflictIdentifiers = isArray(onConflict) ? onConflict : [onConflict]
-    const conflictTarget = conflictIdentifiers.map(toName).join(',')
 
-    text += `ON CONFLICT (${conflictTarget}) DO ${update ? 'UPDATE' : 'NOTHING'}\n`
+    text += `ON CONFLICT (${formatNames(conflictIdentifiers)}) DO ${update ? 'UPDATE' : 'NOTHING'}\n`
 
     if (update) {
       if (!isArray(update)) {
@@ -155,18 +148,14 @@ sql.insert = ({
         update = columns.filter(col => !conflictIdentifiers.includes(col))
       }
 
-      const updateNames = update.map(toName)
+      const unquotedNames = update.map(escapeDoubleQuotes)
 
-      text += 'SET '
-      text += updateNames.map(colName => `${colName} = Excluded.${colName}`)
-      text += '\n'
+      const excluded = 'Excluded."' + unquotedNames.join('",Excluded."') + '"'
+
+      text += `SET ("${unquotedNames.join('","')}") = (${excluded})\n`
 
       if (skipEqual) {
-        text += 'WHERE '
-        text += updateNames
-        .map(colName => `${tableName}.${colName} IS DISTINCT FROM Excluded.${colName}`)
-        .join(' OR ')
-        text += '\n'
+        text += `WHERE (__t."${unquotedNames.join('",__t."')}") IS DISTINCT FROM (${excluded})\n`
       }
     } else if (update == null) {
       throw new TypeError('`onConflict` option requires `update`')
@@ -177,7 +166,7 @@ sql.insert = ({
 
   if (returning) {
     text += 'RETURNING '
-    text += returning === '*' ? '*' : returning.map(toName)
+    text += returning === '*' ? '*' : formatNames(returning)
     text += '\n'
   }
 

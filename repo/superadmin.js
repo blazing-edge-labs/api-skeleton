@@ -39,7 +39,7 @@ const getMany = (resource) => {
   return async (ids) => {
     return db.sql`
       SELECT * FROM "${resource}"
-      WHERE id IN (${sql.values(ids)})
+      WHERE id = ANY (${ids})
     `
     .then(map)
   }
