@@ -1,8 +1,9 @@
-const { toLiteral, escapeDoubleQuotes } = require('./format')
+const { toLiteral, toName, escapeDoubleQuotes } = require('./format')
 const { isArray } = Array
 
-const formatNames = xs => `"${xs.map(escapeDoubleQuotes).join('","')}"`
 const formatValueWith = toValue => x => x instanceof Sql ? x._compile(toValue) : toValue(x)
+
+const joinPrefixed = (prefix, xs, sep = ',') => xs.length === 0 ? '' : `${prefix}${xs.join(sep + prefix)}`
 
 class Sql {
   constructor (compile) {
@@ -54,7 +55,7 @@ sql.raw = source => {
 }
 
 sql.names = (names, sep = ',') => {
-  const code = '"' + names.map(escapeDoubleQuotes).join(`"${sep}"`) + '"'
+  const code = names.map(toName).join(sep)
   return new Sql(() => code)
 }
 
@@ -72,9 +73,9 @@ sql.cond = obj => new Sql(toValue => {
 })
 
 sql.sets = obj => new Sql(toValue => {
-  const leftSide = formatNames(Object.keys(obj))
-  const rightSide = Object.values(obj).map(formatValueWith(toValue)).join(',')
-  return `(${leftSide}) = (${rightSide})`
+  const left = Object.keys(obj).map(toName)
+  const right = Object.values(obj).map(formatValueWith(toValue))
+  return `(${left}) = (${right})`
 })
 
 sql.update = ({
@@ -84,13 +85,13 @@ sql.update = ({
   skipEqual = false,
   returning = undefined, // '*' | string[] | undefined
 }) => new Sql(toValue => {
-  const leftSide = formatNames(Object.keys(set))
-  const rightSide = Object.values(set).map(formatValueWith(toValue)).join(',')
+  const leftSide = Object.keys(set).map(toName).join()
+  const rightSide = Object.values(set).map(formatValueWith(toValue)).join()
 
   const conditionSql = where instanceof Sql ? where : sql.cond(where)
   const condition = conditionSql._compile(toValue)
 
-  let text = `UPDATE "${escapeDoubleQuotes(table)}"\n`
+  let text = `UPDATE ${toName(table)}\n`
   text += `SET (${leftSide}) = (${rightSide})\n`
   text += `WHERE (${condition})\n`
 
@@ -100,7 +101,7 @@ sql.update = ({
 
   if (returning) {
     text += 'RETURNING '
-    text += returning === '*' ? '*' : formatNames(returning)
+    text += returning === '*' ? '*' : returning.map(toName)
     text += '\n'
   }
 
@@ -121,7 +122,6 @@ sql.insert = ({
     if (data.length === 0) throw new TypeError('inserting data is empty')
   }
 
-  const unquotedTable = escapeDoubleQuotes(into)
   let valuesBody
 
   if (columns) {
@@ -132,12 +132,12 @@ sql.insert = ({
     valuesBody = Object.values(data).map(toValue).join(',')
   }
 
-  let text = `INSERT INTO "${unquotedTable}" __t (${formatNames(columns)}) VALUES\n(${valuesBody})\n`
+  let text = `INSERT INTO ${toName(into)} __t (${columns.map(toName)}) VALUES\n(${valuesBody})\n`
 
   if (onConflict != null) {
     const conflictIdentifiers = isArray(onConflict) ? onConflict : [onConflict]
 
-    text += `ON CONFLICT (${formatNames(conflictIdentifiers)}) DO ${update ? 'UPDATE' : 'NOTHING'}\n`
+    text += `ON CONFLICT (${conflictIdentifiers.map(toName)}) DO ${update ? 'UPDATE' : 'NOTHING'}\n`
 
     if (update) {
       if (!isArray(update)) {
@@ -145,14 +145,14 @@ sql.insert = ({
         update = columns.filter(col => !conflictIdentifiers.includes(col))
       }
 
-      const unquotedNames = update.map(escapeDoubleQuotes)
+      const colNames = update.map(toName)
 
-      const excluded = 'Excluded."' + unquotedNames.join('",Excluded."') + '"'
+      const excluded = joinPrefixed('Excluded.', colNames)
 
-      text += `SET ("${unquotedNames.join('","')}") = (${excluded})\n`
+      text += `SET (${colNames}) = (${excluded})\n`
 
       if (skipEqual) {
-        text += `WHERE (__t."${unquotedNames.join('",__t."')}") IS DISTINCT FROM (${excluded})\n`
+        text += `WHERE (${joinPrefixed('__t.', colNames)}) IS DISTINCT FROM (${excluded})\n`
       }
     } else if (update == null) {
       throw new TypeError('`onConflict` option requires `update`')
@@ -164,7 +164,7 @@ sql.insert = ({
 
   if (returning) {
     text += 'RETURNING '
-    text += returning === '*' ? '*' : formatNames(returning)
+    text += returning === '*' ? '*' : returning.map(toName)
     text += '\n'
   }
 

@@ -32,8 +32,13 @@ function toIdentifier (value) {
   return str.length === 1 && /^[a-z]$/.test(str) ? str : `"${escapeDoubleQuotes(str)}"`
 }
 
+function toName (value) {
+  return `"${escapeDoubleQuotes(value)}"`
+}
+
 module.exports = {
   toLiteral,
   toIdentifier,
+  toName,
   escapeDoubleQuotes,
 }
