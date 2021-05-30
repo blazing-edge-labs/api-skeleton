@@ -1,8 +1,8 @@
 const assert = require('assert')
 
-const { byKeyed, byGrouped, memoRefIn, identity } = require('utils/data')
+const { byKeyed, byGrouped, memoArgs, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
-const { db: _db, Sql, format } = require('db')
+const { db, Sql, format } = require('db')
 
 const kMapItem = Symbol('mapItem')
 
@@ -33,25 +33,20 @@ function mapper (mapping) {
   return map
 }
 
-function loader (resolveKeysWith, { db = _db, mapKey, batchMaxSize = 1000, ...notAllowed } = {}) {
+function loader (resolveKeysWith, { defaults = [], mapKey, batchMaxSize = 1000, ...notAllowed } = {}) {
   assert.deepEqual(notAllowed, {}, 'Invalid options')
 
-  const loaderWith = memoRefIn(new Map(), locking => {
-    if (locking) {
-      assert(resolveKeysWith.length >= 2, 'Loader not supporting locking')
-      assert(locking.startsWith('FOR '), 'Locking Clause expected to start with "FOR "')
-    }
-    const options = { mapKey, batchMaxSize }
-    return memoRefIn(new WeakMap(), db => createLoader(resolveKeysWith(db, locking), options))
+  const maxArgs = Math.max(resolveKeysWith.length, defaults.length)
+
+  const loadUsing = memoArgs((...args) => {
+    assert(args.length <= maxArgs, 'loader not supporting that many arguments')
+
+    const load = createLoader(resolveKeysWith(...args), { batchMaxSize })
+    return !mapKey ? load : key => load(mapKey(key))
   })
 
-  const loaderWithNoLocking = loaderWith('')
-  const load = loaderWithNoLocking(db)
-
-  load.using = (db, locking) => locking
-    ? loaderWith(locking)(db)
-    : loaderWithNoLocking(db)
-
+  const load = loadUsing(...defaults)
+  load.using = loadUsing
   return load
 }
 
@@ -75,10 +70,14 @@ const sqlLoaderBuilder = ({ multi }) => ({
   where = '',
   orderBy = '',
   map = identity,
-  ...rest
+  defaultValue = null,
+  mapKey = null,
+  batchMaxSize = 1000,
+  ...notAllowed
 }) => {
   assert(from, '"from" is required')
   assert(!by === /\b__\b/.test(where), '"by", xor use of `__` in "where", is required')
+  assert.deepEqual(notAllowed, {}, 'Invalid options')
 
   const simpleSel = reWord.test(by) && select === '*'
   const mapItem = map[kMapItem] || map
@@ -98,6 +97,10 @@ const sqlLoaderBuilder = ({ multi }) => ({
   }
 
   return loader((db, locking) => async keys => {
+    if (locking) {
+      assert(locking.startsWith('FOR '), 'Locking Clause expected to start with "FOR "')
+    }
+
     const text = by
       ? `
         SELECT ${select}
@@ -105,14 +108,14 @@ const sqlLoaderBuilder = ({ multi }) => ({
         WHERE ${by} IN (${keys.map(format.toLiteral)})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
-        ${locking}
+        ${locking || ''}
       `
       : `
         SELECT ${select}
         FROM (VALUES (${keys.map(format.toLiteral).join('),(')})) __t (__), ${from}
         WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
-        ${locking}
+        ${locking || ''}
       `
 
     const r = await db.query({ text })
@@ -125,9 +128,13 @@ const sqlLoaderBuilder = ({ multi }) => ({
     }
 
     return multi
-      ? keys.map(byGrouped(r, keyName, mapItem))
-      : keys.map(byKeyed(r, keyName, mapItem, null))
-  }, rest)
+      ? keys.map(byGrouped(r, keyName, mapItem, []))
+      : keys.map(byKeyed(r, keyName, mapItem, defaultValue))
+  }, {
+    defaults: [db],
+    batchMaxSize,
+    mapKey,
+  })
 }
 
 loader.one = sqlLoaderBuilder({ multi: false })
