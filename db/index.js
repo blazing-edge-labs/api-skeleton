@@ -1,32 +1,23 @@
-const { Pool, types } = require('pg')
-
+const pg = require('pg')
+const lib = require('db/lib')
 const error = require('error')
 
-const { Database } = require('db/lib')
-const { sql, Sql } = require('db/lib/sql')
-const format = require('db/lib/format')
+// Don't store DB dates in Date!
+pg.types.setTypeParser(1082, v => v)
 
-// https://github.com/brianc/node-pg-types/issues/50
-const DATE_OID = 1082
-types.setTypeParser(DATE_OID, v => v)
-
-const pool = new Pool({
+const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
 })
 
-const db = new Database(pool, {
+const db = new lib.Database(pool, {
   queryErrorHandler: (e, query) => {
     // console.log('------\n', query)
-    // console.error(e)
     throw error('db.query', e)
   },
   debug: process.env.NODE_ENV !== 'production',
 })
 
 module.exports = {
+  ...lib,
   db,
-  sql,
-  format,
-  Database,
-  Sql,
 }
