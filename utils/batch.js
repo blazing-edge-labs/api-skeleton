@@ -45,6 +45,9 @@ function createLoader (
   }
 
   return key => {
+    if (key == null) {
+      return Promise.resolve(key)
+    }
     let p = cache.get(key)
     if (!p) {
       tmpKey = key
