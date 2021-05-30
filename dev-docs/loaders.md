@@ -185,6 +185,8 @@ const loadFullName = loader((db, lockingClause) => async userIds => {
   `
 
   return userIds.map(byKeyed(rows, 'id', 'fullName', null))
+}, {
+  defaults: [db],
 })
 
 const fullName1 = await loadFullName(userId)
