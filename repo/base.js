@@ -55,12 +55,12 @@ const reWord = /^[a-zA-Z]\w*$/
 const asCode = x => {
   if (!x) return ''
   if (x instanceof Sql) return x.toPlainQuery()
-  if (reWord.test(x)) return format.toIdentifier(x)
+  if (reWord.test(x)) return format.toName(x)
   return String(x)
 }
 
 const asNamesOrCode = x => Array.isArray(x)
-  ? x.map(format.toIdentifier).join(',')
+  ? x.map(format.toName).join(',')
   : asCode(x)
 
 const sqlLoaderBuilder = ({ multi }) => ({
@@ -101,18 +101,20 @@ const sqlLoaderBuilder = ({ multi }) => ({
       assert(locking.startsWith('FOR '), 'Locking Clause expected to start with "FOR "')
     }
 
+    const literals = keys.map(format.toLiteral)
+
     const text = by
       ? `
         SELECT ${select}
         FROM ${from}
-        WHERE ${by} IN (${keys.map(format.toLiteral)})
+        WHERE ${by} IN (${literals})
         ${where && `AND (${where})`}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking || ''}
       `
       : `
         SELECT ${select}
-        FROM (VALUES (${keys.map(format.toLiteral).join('),(')})) __t (__), ${from}
+        FROM (VALUES (${literals.join('),(')})) __t (__), ${from}
         WHERE ${where}
         ${orderBy && `ORDER BY ${orderBy}`}
         ${locking || ''}
@@ -124,7 +126,7 @@ const sqlLoaderBuilder = ({ multi }) => ({
     if (keys.length === 1) {
       return multi
         ? [r.map(mapItem)]
-        : [r.length ? mapItem(r[0]) : null]
+        : [r.length ? mapItem(r[0]) : defaultValue]
     }
 
     return multi
