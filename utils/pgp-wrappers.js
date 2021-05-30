@@ -12,8 +12,7 @@
  * not important or even dangerous.
  */
 const { as, queryResult } = require('pg-promise')
-
-const { Queue } = require('utils/data')
+const { Queue } = require('queue')
 
 const noop = () => {}
 
