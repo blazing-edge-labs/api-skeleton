@@ -3794,6 +3794,10 @@ querystring@0.2.0:
   resolved "https://registry.yarnpkg.com/querystring/-/querystring-0.2.0.tgz#b209849203bb25df820da756e747005878521620"
   integrity sha1-sgmEkgO7Jd+CDadW50cAWHhSFiA=
 
+"queue@gist:b22ca12fcee4e1d4c3c0f85d43080f92":
+  version "0.0.3"
+  resolved "https://gist.github.com/b22ca12fcee4e1d4c3c0f85d43080f92.git#5044b841bdbd2155d5986f63a3bb3af0ea13fe44"
+
 randombytes@^2.0.0, randombytes@^2.0.1, randombytes@^2.0.5:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/randombytes/-/randombytes-2.1.0.tgz#df6f84372f0270dc65cdf6291349ab7a473d4f2a"

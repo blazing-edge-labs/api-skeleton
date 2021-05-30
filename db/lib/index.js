@@ -1,4 +1,4 @@
-const { Queue } = require('utils/data')
+const { Queue } = require('queue')
 const { sql: _sql, Sql } = require('./sql')
 
 class Database {
