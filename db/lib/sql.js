@@ -94,7 +94,7 @@ sql.update = ({
   text += `WHERE (${condition})\n`
 
   if (skipEqual) {
-    text += `  AND (${leftSide}) IS DISTINCT FROM (${rightSide})`
+    text += `  AND (${leftSide}) IS DISTINCT FROM (${rightSide})\n`
   }
 
   if (returning) {
