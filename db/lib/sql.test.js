@@ -96,6 +96,46 @@ test('upsert with sql.insert', t => {
   t.deepEqual(values, [1, 'Ivan'])
 })
 
+test('upsert of multiple rows with sql.insert', t => {
+  const upsertSql = sql.insert({
+    into: 'user',
+    columns: ['id', 'name'],
+    data: [
+      { id: 1, name: 'Ivan' },
+      { id: 2, name: 'Ante' },
+    ],
+    onConflict: 'id',
+    update: true,
+    skipEqual: true,
+    returning: ['id'],
+  })
+
+  const plain = upsertSql.toPlainQuery()
+  const { text, values } = upsertSql.toPgQuery()
+
+  t.is(unindent(plain), unindentRaw`
+    INSERT INTO "user" t ("id","name") VALUES
+    (1,'Ivan'),
+    (2,'Ante')
+    ON CONFLICT ("id") DO UPDATE
+    SET ("name") = (Excluded."name")
+    WHERE (t."name") IS DISTINCT FROM (Excluded."name")
+    RETURNING "id"
+  `)
+
+  t.is(unindent(text), unindentRaw`
+    INSERT INTO "user" t ("id","name") VALUES
+    ($1,$2),
+    ($3,$4)
+    ON CONFLICT ("id") DO UPDATE
+    SET ("name") = (Excluded."name")
+    WHERE (t."name") IS DISTINCT FROM (Excluded."name")
+    RETURNING "id"
+  `)
+
+  t.deepEqual(values, [1, 'Ivan', 2, 'Ante'])
+})
+
 test('upsert with sql.insert on minimal columns', t => {
   const upsertSql = sql.insert({
     into: 'user',
