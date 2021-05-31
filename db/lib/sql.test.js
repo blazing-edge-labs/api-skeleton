@@ -19,16 +19,16 @@ test('simple template', t => {
   t.deepEqual(values, [data, 18])
 })
 
-test('template composition', t => {
+test.only('template composition', t => {
   const sql1 = sql`SELECT * FROM "table1" WHERE id = ANY(${[1, 2, 3]})`
-  const sql2 = sql`SELECT * FROM "table2" WHERE ref IN (${sql1})`
+  const sql2 = sql`SELECT * FROM "table2" WHERE ref IN (${sql1}) AND type = ${4}`
 
   const plain = sql2.toPlainQuery()
   const { text, values } = sql2.toPgQuery()
 
-  t.is(plain, `SELECT * FROM "table2" WHERE ref IN (SELECT * FROM "table1" WHERE id = ANY(array[1,2,3]))`)
-  t.is(text, `SELECT * FROM "table2" WHERE ref IN (SELECT * FROM "table1" WHERE id = ANY($1))`)
-  t.deepEqual(values, [[1, 2, 3]])
+  t.is(plain, `SELECT * FROM "table2" WHERE ref IN (SELECT * FROM "table1" WHERE id = ANY(array[1,2,3])) AND type = 4`)
+  t.is(text, `SELECT * FROM "table2" WHERE ref IN (SELECT * FROM "table1" WHERE id = ANY($1)) AND type = $2`)
+  t.deepEqual(values, [[1, 2, 3], 4])
 })
 
 test('sql.update', t => {
