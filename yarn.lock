@@ -2866,6 +2866,10 @@ media-typer@0.3.0:
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"
   integrity sha1-hxDXrwqmJvj/+hzgAWhUUmMlV0g=
 
+"memo-args@gist:e941ee28eb4e4072ebbe9d696fdfb7af":
+  version "0.0.1"
+  resolved "https://gist.github.com/e941ee28eb4e4072ebbe9d696fdfb7af.git#85426991c2713a7346434c176e629da0d03fa224"
+
 memoize-one@~5.1.1:
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/memoize-one/-/memoize-one-5.1.1.tgz#047b6e3199b508eaec03504de71229b8eb1d75c0"
@@ -3796,7 +3800,7 @@ querystring@0.2.0:
 
 "queue@gist:b22ca12fcee4e1d4c3c0f85d43080f92":
   version "0.0.3"
-  resolved "https://gist.github.com/b22ca12fcee4e1d4c3c0f85d43080f92.git#5044b841bdbd2155d5986f63a3bb3af0ea13fe44"
+  resolved "https://gist.github.com/b22ca12fcee4e1d4c3c0f85d43080f92.git#106e4d70d50af7cfcd627d6344a484cff8fae9f9"
 
 randombytes@^2.0.0, randombytes@^2.0.1, randombytes@^2.0.5:
   version "2.1.0"

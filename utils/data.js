@@ -1,51 +1,5 @@
 const identity = x => x
 
-function memoRefIn (cache, fn) {
-  return key => {
-    let ref = cache.get(key)
-    if (!ref) cache.set(key, (ref = fn(key)))
-    return ref
-  }
-}
-
-function memoArgs (fn) {
-  const NONE = {}
-
-  const root = {
-    result: NONE,
-    byVal: null,
-    byRef: null,
-  }
-
-  return (...args) => {
-    let node = root
-
-    for (let i = 0; i < args.length; ++i) {
-      const key = args[i]
-
-      const cache = key === Object(key)
-        ? node.byRef || (node.byRef = new WeakMap())
-        : node.byVal || (node.byVal = new Map())
-
-      node = cache.get(key)
-      if (!node) {
-        node = {
-          result: NONE,
-          byVal: null,
-          byRef: null,
-        }
-        cache.set(key, node)
-      }
-    }
-
-    if (node.result === NONE) {
-      node.result = fn(...args)
-    }
-
-    return node.result
-  }
-}
-
 const toFn = x => {
   if (x == null) {
     return identity
@@ -82,10 +36,16 @@ function byGrouped (iterable, mapKey, mapValue, defValue) {
   mapValue = toFn(mapValue)
 
   const cache = new Map()
-  const getGroup = memoRefIn(cache, () => [])
 
   for (const item of iterable) {
-    getGroup(mapKey(item)).push(mapValue(item))
+    const key = mapKey(item)
+    const value = mapValue(item)
+    const group = cache.get(key)
+    if (group) {
+      group.push(value)
+    } else {
+      cache.set(key, [value])
+    }
   }
 
   return key => cache.get(key) || defValue
@@ -100,8 +60,6 @@ function * mapIterable (iterable, fn) {
 
 module.exports = {
   identity,
-  memoRefIn,
-  memoArgs,
   byKeyed,
   byGrouped,
   mapIterable,

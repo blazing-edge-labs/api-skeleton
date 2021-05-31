@@ -1,6 +1,7 @@
+const { memoArgs } = require('memo-args')
 const assert = require('assert')
 
-const { byKeyed, byGrouped, memoArgs, identity } = require('utils/data')
+const { byKeyed, byGrouped, identity } = require('utils/data')
 const { createLoader } = require('utils/batch')
 const { db, Sql, format } = require('db')
 
