@@ -61,10 +61,11 @@ sql.values = (values, sep = ',') => new Sql(toValue => values.map(toValue).join(
 sql.cond = obj => new Sql(toValue => {
   return Object.keys(obj)
   .map(key => {
-    const x = obj[key]
-    return x instanceof Sql
-      ? `("${escapeDoubleQuotes(key)}" ${x._compile(toValue)})`
-      : `"${escapeDoubleQuotes(key)}" = ${toValue(x)}`
+    const name = toName(key)
+    const val = obj[key]
+    return val instanceof Sql
+      ? `(${name} ${val._compile(toValue)})`
+      : `${name} = ${toValue(val)}`
   })
   .join(' AND ')
 })

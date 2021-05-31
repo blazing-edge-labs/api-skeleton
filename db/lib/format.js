@@ -20,8 +20,6 @@ function toLiteral (value) {
       if (isArray(value)) return value.length === 0 ? '\'{}\'' : `array[${value.map(toLiteral)}]`
       if (isBuffer(value)) return `E'\\\\x${value.toString('hex')}'`
       return toLiteral(JSON.stringify(value))
-    // case 'function':
-    //   return value(toLiteral)
     default:
       throw new TypeError(`the ${typeof value} can not be converted to a SQL literal`)
   }
@@ -33,7 +31,8 @@ function toIdentifier (value) {
 }
 
 function toName (value) {
-  return `"${escapeDoubleQuotes(value)}"`
+  const str = String(value)
+  return `"${escapeDoubleQuotes(str)}"`
 }
 
 module.exports = {
