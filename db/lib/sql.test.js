@@ -19,7 +19,7 @@ test('simple template', t => {
   t.deepEqual(values, [data, 18])
 })
 
-test.only('template composition', t => {
+test('template composition', t => {
   const sql1 = sql`SELECT * FROM "table1" WHERE id = ANY(${[1, 2, 3]})`
   const sql2 = sql`SELECT * FROM "table2" WHERE ref IN (${sql1}) AND type = ${4}`
 
@@ -60,4 +60,86 @@ test('sql.update', t => {
   `)
 
   t.deepEqual(values, ['Alex', true, 1])
+})
+
+test('upsert with sql.insert', t => {
+  const upsertSql = sql.insert({
+    into: 'user',
+    data: { id: 1, name: 'Ivan' },
+    onConflict: 'id',
+    update: true,
+    skipEqual: true,
+    returning: ['id'],
+  })
+
+  const plain = upsertSql.toPlainQuery()
+  const { text, values } = upsertSql.toPgQuery()
+
+  t.is(unindent(plain), unindentRaw`
+    INSERT INTO "user" t ("id","name") VALUES
+    (1,'Ivan')
+    ON CONFLICT ("id") DO UPDATE
+    SET ("name") = (Excluded."name")
+    WHERE (t."name") IS DISTINCT FROM (Excluded."name")
+    RETURNING "id"
+  `)
+
+  t.is(unindent(text), unindentRaw`
+    INSERT INTO "user" t ("id","name") VALUES
+    ($1,$2)
+    ON CONFLICT ("id") DO UPDATE
+    SET ("name") = (Excluded."name")
+    WHERE (t."name") IS DISTINCT FROM (Excluded."name")
+    RETURNING "id"
+  `)
+
+  t.deepEqual(values, [1, 'Ivan'])
+})
+
+test('upsert with sql.insert on minimal columns', t => {
+  const upsertSql = sql.insert({
+    into: 'user',
+    data: { id: 7 },
+    onConflict: 'id',
+    update: true,
+    skipEqual: true,
+    returning: ['id'],
+  })
+
+  const plain = upsertSql.toPlainQuery()
+  const { text, values } = upsertSql.toPgQuery()
+
+  t.is(unindent(plain), unindentRaw`
+    INSERT INTO "user" t ("id") VALUES
+    (7)
+    ON CONFLICT ("id") DO NOTHING
+    RETURNING "id"
+  `)
+
+  t.is(unindent(text), unindentRaw`
+    INSERT INTO "user" t ("id") VALUES
+    ($1)
+    ON CONFLICT ("id") DO NOTHING
+    RETURNING "id"
+  `)
+
+  t.deepEqual(values, [7])
+})
+
+test('upsert with sql.insert on minimal columns but no skipEqual', t => {
+  let error
+
+  try {
+    sql.insert({
+      into: 'user',
+      data: { id: 7 },
+      onConflict: 'id',
+      update: true,
+    })
+    .toPlainQuery()
+  } catch (e) {
+    error = e
+  }
+
+  t.is(error.message, 'no columns to update')
 })

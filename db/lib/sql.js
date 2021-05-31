@@ -143,9 +143,13 @@ sql.insert = ({
 
     if (update === true) {
       update = columns.filter(col => !conflictIdentifiers.includes(col))
-      if (update.length === 0) {
-        if (!skipEqual) throw new Error('no columns to update')
+    }
+
+    if (update && update.length === 0) {
+      if (skipEqual) {
         update = false
+      } else {
+        throw new Error('no columns to update')
       }
     }
 
