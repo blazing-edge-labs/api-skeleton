@@ -54,12 +54,9 @@ sql.raw = source => {
   return new Sql(() => source)
 }
 
-sql.names = (names, sep = ',') => {
-  const code = names.map(toName).join(sep)
-  return new Sql(() => code)
-}
+sql.names = (names, sep = ',') => new Sql(() => names.map(toName).join(sep))
 
-sql.values = (values, sep = ',') => new Sql(toValue => Array.from(values, toValue).join(sep))
+sql.values = (values, sep = ',') => new Sql(toValue => values.map(toValue).join(sep))
 
 sql.cond = obj => new Sql(toValue => {
   return Object.keys(obj)
@@ -121,6 +118,12 @@ sql.insert = ({
     if (!columns) throw new TypeError('`columns` required when `data` is an array')
     if (data.length === 0) throw new TypeError('inserting data is empty')
   }
+  if (onConflict == null !== update == null) {
+    throw new TypeError('options `onConflict` and `update` require each other')
+  }
+  if (skipEqual && !onConflict) {
+    throw new TypeError('options `skipEqual` requires options `onConflict`')
+  }
 
   let valuesBody
 
@@ -132,19 +135,22 @@ sql.insert = ({
     valuesBody = Object.values(data).map(toValue).join(',')
   }
 
-  let text = `INSERT INTO ${toName(into)} __t (${columns.map(toName)}) VALUES\n(${valuesBody})\n`
+  let text = `INSERT INTO ${toName(into)} t (${columns.map(toName)}) VALUES\n(${valuesBody})\n`
 
-  if (onConflict != null) {
+  if (onConflict) {
     const conflictIdentifiers = isArray(onConflict) ? onConflict : [onConflict]
+
+    if (update === true) {
+      update = columns.filter(col => !conflictIdentifiers.includes(col))
+      if (update.length === 0) {
+        if (!skipEqual) throw new Error('no columns to update')
+        update = false
+      }
+    }
 
     text += `ON CONFLICT (${conflictIdentifiers.map(toName)}) DO ${update ? 'UPDATE' : 'NOTHING'}\n`
 
     if (update) {
-      if (!isArray(update)) {
-        if (update !== true) throw new TypeError('invalid `update` option')
-        update = columns.filter(col => !conflictIdentifiers.includes(col))
-      }
-
       const colNames = update.map(toName)
 
       const excluded = joinPrefixed('Excluded.', colNames)
@@ -152,14 +158,9 @@ sql.insert = ({
       text += `SET (${colNames}) = (${excluded})\n`
 
       if (skipEqual) {
-        text += `WHERE (${joinPrefixed('__t.', colNames)}) IS DISTINCT FROM (${excluded})\n`
+        text += `WHERE (${joinPrefixed('t.', colNames)}) IS DISTINCT FROM (${excluded})\n`
       }
-    } else if (update == null) {
-      throw new TypeError('`onConflict` option requires `update`')
     }
-  } else {
-    if (update != null) throw new TypeError('`update` option requires `onConflict`')
-    if (skipEqual) throw new TypeError('`skipEqual` option requires `onConflict`')
   }
 
   if (returning) {
