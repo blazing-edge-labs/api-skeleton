@@ -1,5 +1,5 @@
 const error = require('error')
-const { db, helper } = require('db')
+const { db, sql } = require('db')
 const userRepo = require('repo/user')
 
 // [ ] Todo: implement list filtering
@@ -14,7 +14,7 @@ const userRepo = require('repo/user')
 const resourceMaps = {
   user: {
     map: userRepo.map,
-    columnSet: userRepo.columnSet,
+    prepare: userRepo.prepare,
   },
   // add here
 }
@@ -24,12 +24,12 @@ const getAll = (resource) => {
   const { map } = resourceMaps[resource]
   return async (query) => {
     const { sort, page, perPage } = query
-    return db.any(`
-      SELECT * FROM $1~
-      ORDER BY $2^ $3^
-      LIMIT $4 OFFSET $5
-  `, [resource, ...sort, perPage, ((page - 1) * perPage)])
-    .catch(error.db({ noData: `${resource}.not_found` }))
+    return db.sql`
+      SELECT * FROM "${resource}"
+      ORDER BY ${sql.raw(sort.join(' '))}
+      LIMIT ${perPage}
+      OFFSET ${(page - 1) * perPage}
+    `
     .then(map)
   }
 }
@@ -37,51 +37,65 @@ const getAll = (resource) => {
 const getMany = (resource) => {
   const { map } = resourceMaps[resource]
   return async (ids) => {
-    return db.any(`
-      SELECT * FROM $1~
-      WHERE id IN ($2:csv)
-    `, [resource, ids])
-    .catch(error.db({ noData: `${resource}.not_found` }))
+    return db.sql`
+      SELECT * FROM "${resource}"
+      WHERE id = ANY (${ids})
+    `
     .then(map)
   }
 }
 
 const getAllCount = (resource) => {
   return async () => {
-    return db.any('SELECT count(*) AS total FROM $1~', resource)
+    return db.sql`SELECT count(*) AS total FROM "${resource}"`
   }
 }
 
 const getById = (resource) => {
   const { map } = resourceMaps[resource]
   return async (id) => {
-    return db.one(`
+    const [row] = await db.sql`
       SELECT *
-      FROM $1~
-      WHERE id = $2
-    `, [resource, id])
-    .catch(error.db({ noData: `${resource}.not_found` }))
+      FROM "${resource}"
+      WHERE id = ${id}
+    `
     .then(map)
+
+    if (!row) throw error(`${resource}.not_found`)
+    return row
   }
 }
 
 const remove = (resource) => {
   return async (id) => {
-    return db.none('DELETE FROM $1~ WHERE id = $2', [resource, id])
+    await db.sql`DELETE FROM "${resource}" WHERE id = ${id}`
   }
 }
 
 const create = (resource) => {
-  const { columnSet } = resourceMaps[resource]
+  const { prepare, map } = resourceMaps[resource]
   return async (data) => {
-    return db.one(helper.insert(data, columnSet) + ' RETURNING id')
+    const [item] = await db.insert({
+      into: resource,
+      data: prepare(data),
+      returning: ['id'],
+    })
+
+    return map(item)
   }
 }
 
 const update = (resource) => {
-  const { columnSet } = resourceMaps[resource]
+  const { prepare, map } = resourceMaps[resource]
   return async (id, data) => {
-    return db.one(helper.update(data, columnSet) + ' WHERE id = $1 RETURNING id', id)
+    const [row] = await db.update({
+      table: resource,
+      where: { id },
+      set: prepare(data),
+      returning: '*',
+    })
+
+    return map(row)
   }
 }
 

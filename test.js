@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken')
 const supertest = require('supertest')
 const tape = require('tape')
 
-const { pgp } = require('db')
+const { db } = require('db')
 const request = supertest(require('app').callback())
 const userRepo = require('repo/user')
 
@@ -12,7 +12,7 @@ const cache = new Map()
 const store = new Map()
 
 tape.onFinish(async function () {
-  await pgp.end()
+  await db.pgPool.end()
 })
 
 process.on('unhandledRejection', function (reason) {

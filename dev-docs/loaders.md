@@ -34,11 +34,11 @@ const productRepo = require('repo/product')
 // ... map, ...
 
 async function list ({ limit = 10, includeUsers = false }) {
-  const orders = await db.any(`
+  const orders = await db.sql`
     SELECT *
     FROM "order"
-    LIMIT $[limit]
-  `, {limit})
+    LIMIT ${limit}
+  `
   .then(map)
 
   const loadUserWithRoles = async userId => {
@@ -177,12 +177,12 @@ const loadByUserId = loader.all({
 const { byKeyed } = require('utils/data')
 
 const loadFullName = loader((db, lockingClause) => async userIds => {
-  const rows = await db.any(`
+  const rows = await db.sql`
     SELECT id, (first_name || ' ' || last_name) as "fullName"
     FROM "user"
-    WHERE id IN ($1:csv)
-    ${lockingClause} // <- remember to use the second argument
-  `, [userIds])
+    WHERE id = ANY (${userIds})
+    ${sql.raw(lockingClause)} // <- remember to use the second argument
+  `
 
   return userIds.map(byKeyed(rows, 'id', 'fullName', null))
 }, {

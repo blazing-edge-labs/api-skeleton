@@ -1,45 +1,31 @@
 // should only be ran through package.json scripts
 
-const argv = require('mri')(process.argv.slice(2), {
-  boolean: true,
-  stopEarly: true,
-})
-const migratio = require('migratio')
+const fs = require('fs')
+const { migrate } = require('postgres-migrations')
+const { db } = require('db')
 
-const { pgpDB: db, sql, pgp } = require('db')
-
-const command = argv._[0]
-
-async function run () {
+async function run (command) {
   switch (command) {
-    case 'up':
-    case 'down':
-    case 'current':
-      return migratio[command]({
-        directory: 'db/migration',
-        tableName: 'migration',
-        verbose: true,
-        revision: argv.r,
-        db,
-      })
+    case 'migrate':
+      return db.task(t => migrate({ client: t.pgClient }, 'db/migration'))
     case 'drop':
-      return db.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;')
-    case 'seed':
-      return db.tx(t => {
-        return t.query(sql('seed'))
-      })
+      return db.sql`DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;`
+    case 'seed': {
+      const text = fs.readFileSync('db/seed.sql', 'utf8')
+      return db.tx(t => t.query({ text }))
+    }
     default:
       throw new Error(`"${command}" is not a valid migration command`)
   }
 }
 
-run()
+run(...process.argv.slice(2))
 .then(() => {
-  pgp.end()
+  db.pgPool.end()
   return process.exit(0)
 })
 .catch(e => {
   console.error(e)
-  pgp.end()
+  db.pgPool.end()
   return process.exit(1)
 })

@@ -3,15 +3,15 @@ const randomString = require('crypto-random-string')
 
 const error = require('error')
 const userRepo = require('repo/user')
-const { db } = require('db')
+const { db, sql } = require('db')
 
 async function create (userId) {
   await remove(userId)
-  const { token } = await db.one(`
+  const [{ token }] = await db.sql`
     INSERT INTO password_token (user_id, token)
-    VALUES ($1, $2)
+    VALUES (${userId}, ${randomString({ length: 32 })})
     RETURNING token
-  `, [userId, randomString({ length: 32 })])
+  `
   return token
 }
 
@@ -26,19 +26,23 @@ async function createByEmail (email) {
 }
 
 async function remove (userId) {
-  return db.none('DELETE FROM password_token WHERE user_id = $1', [userId])
+  return db.sql`DELETE FROM password_token WHERE user_id = ${userId}`
 }
 
 async function get (token) {
-  const r = await db.one(`
+  const hoursDur = _.toInteger(process.env.PASSWORD_TOKEN_DURATION)
+
+  const [row] = await db.sql`
     SELECT user_id
     FROM password_token
     WHERE
-      token = $1
-      AND created_at > now() - interval '$2 hour'
-  `, [token, _.toInteger(process.env.PASSWORD_TOKEN_DURATION)])
-  .catch(error.db({ noData: 'user.password_token_invalid' }))
-  return r.user_id
+      token = ${token}
+      AND created_at > now() - interval '${sql.raw(hoursDur)} hour'
+  `
+
+  if (!row) throw error('user.password_token_invalid')
+
+  return row.user_id
 }
 
 module.exports = {

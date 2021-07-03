@@ -1,47 +1,25 @@
-const pgp = require('pg-promise')({
-  // error (_err, e) { console.log('------\n', e.query) },
-  // query (e) { console.log('------\n', e.query) },
+const pg = require('pg')
+const { Database, Sql, sql, format } = require('hrid')
+const error = require('error')
+
+// Don't store DB dates in Date!
+pg.types.setTypeParser(1082, v => v)
+
+const pgPool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
 })
 
-const error = require('error')
-const { wrapDatabase } = require('utils/pgp-wrappers')
-
-/// PG stuff
-
-// https://github.com/brianc/node-pg-types/issues/50
-const DATE_OID = 1082
-pgp.pg.types.setTypeParser(DATE_OID, v => v)
-
-/// DB stuff
-
-const pgpDB = pgp(process.env.DATABASE_URL)
-
-const db = wrapDatabase(pgpDB, {
-  queryErrorHandler: e => {
+const db = new Database(pgPool, {
+  queryErrorHandler: (e, query) => {
+    // console.log('------\n', query)
     throw error('db.query', e)
   },
+  debug: process.env.NODE_ENV !== 'production',
 })
-
-/// sql(file)
-
-const queryFiles = new Map()
-
-function sql (filename) {
-  if (!queryFiles.has(filename) || process.env.NODE_ENV === 'development') {
-    queryFiles.set(filename, new pgp.QueryFile(`${filename}.sql`, {
-      compress: process.env.NODE_ENV === 'production',
-      debug: process.env.NODE_ENV === 'development',
-    }))
-  }
-
-  return queryFiles.get(filename)
-}
 
 module.exports = {
   db,
-  pgpDB,
-  helper: pgp.helpers,
-  pgp,
+  Sql,
   sql,
-  util: pgp.utils,
+  format,
 }
