@@ -12,7 +12,7 @@ const cache = new Map()
 const store = new Map()
 
 tape.onFinish(async function () {
-  await db.pool.end()
+  await db.pgPool.end()
 })
 
 process.on('unhandledRejection', function (reason) {

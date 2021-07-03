@@ -7,7 +7,7 @@ const { db } = require('db')
 async function run (command) {
   switch (command) {
     case 'migrate':
-      return db.task(({ client }) => migrate({ client }, 'db/migration'))
+      return db.task(t => migrate({ client: t.pgClient }, 'db/migration'))
     case 'drop':
       return db.sql`DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;`
     case 'seed': {
@@ -21,11 +21,11 @@ async function run (command) {
 
 run(...process.argv.slice(2))
 .then(() => {
-  db.pool.end()
+  db.pgPool.end()
   return process.exit(0)
 })
 .catch(e => {
   console.error(e)
-  db.pool.end()
+  db.pgPool.end()
   return process.exit(1)
 })

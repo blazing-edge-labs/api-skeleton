@@ -1,15 +1,15 @@
 const pg = require('pg')
-const lib = require('db/lib')
+const { Database, Sql, sql, format } = require('hrid')
 const error = require('error')
 
 // Don't store DB dates in Date!
 pg.types.setTypeParser(1082, v => v)
 
-const pool = new pg.Pool({
+const pgPool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
 })
 
-const db = new lib.Database(pool, {
+const db = new Database(pgPool, {
   queryErrorHandler: (e, query) => {
     // console.log('------\n', query)
     throw error('db.query', e)
@@ -18,6 +18,8 @@ const db = new lib.Database(pool, {
 })
 
 module.exports = {
-  ...lib,
   db,
+  Sql,
+  sql,
+  format,
 }

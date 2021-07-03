@@ -2042,6 +2042,11 @@ hpkp@2.0.0:
   resolved "https://registry.yarnpkg.com/hpkp/-/hpkp-2.0.0.tgz#10e142264e76215a5d30c44ec43de64dee6d1672"
   integrity sha1-EOFCJk52IVpdMMROxD3mTe5tFnI=
 
+hrid@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/hrid/-/hrid-0.1.0.tgz#0275ca4e7fe047dc16ff6158b5e86c0c8fa1d901"
+  integrity sha512-948+QxOKvavouVvFY0x5KAPnfRcbFQQ1wsvNenjL3FFZlB6BBplyenywmjbHyMmrKjx+q3y4UyPbGN1fHsSttg==
+
 hsts@2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/hsts/-/hsts-2.2.0.tgz#09119d42f7a8587035d027dda4522366fe75d964"
@@ -3797,10 +3802,6 @@ querystring@0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/querystring/-/querystring-0.2.0.tgz#b209849203bb25df820da756e747005878521620"
   integrity sha1-sgmEkgO7Jd+CDadW50cAWHhSFiA=
-
-"queue@gist:b22ca12fcee4e1d4c3c0f85d43080f92":
-  version "0.0.3"
-  resolved "https://gist.github.com/b22ca12fcee4e1d4c3c0f85d43080f92.git#106e4d70d50af7cfcd627d6344a484cff8fae9f9"
 
 randombytes@^2.0.0, randombytes@^2.0.1, randombytes@^2.0.5:
   version "2.1.0"
